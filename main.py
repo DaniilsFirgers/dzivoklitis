@@ -131,8 +131,8 @@ def main():
         df["price per m^2"] = df["price per m^2"].astype(int)
         df["m^2"] = df["m^2"].astype(int)
         df = df.loc[
-            (df["full price"] <= 80000) & (df["price per m^2"] <= 2000) & (df["price per m^2"] >= 1200) & (
-                        df["m^2"] >= 40)]
+            (df["full price"] <= "your value") & (df["price per m^2"] <= "your value") & (df["price per m^2"] >= "your value") & (
+                        df["m^2"] >= "your value")]
         df.to_csv("flats.csv")
 
         MSG.attach(BODY_PART)
