@@ -5,6 +5,11 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
+import toml
+from pathlib import Path
+
+from scraper.config import Config, District, GeneralConfig, GmailConfig, TelegramConfig
+
 
 LIST_OF_DISTRICTS = []
 FLATS = {}
@@ -15,6 +20,23 @@ BODY_PART = MIMEText("See new ads!", 'plain')
 MSG['Subject'] = "New advertisements"
 MSG['From'] = my_email
 MSG['To'] = my_email
+
+
+class FlatsParser:
+    def __init__(self):
+        self.config = self.load_config()
+
+    def load_config(self):
+        config_path = Path("../config.toml").resolve()
+        with open(config_path, "r") as file:
+            data = toml.load(file)
+
+        telegram = TelegramConfig(**data["telegram"])
+        gmail = GmailConfig(**data["gmail"])
+        general = GeneralConfig(**data["general"])
+        districts = [District(**district) for district in data["districts"]]
+
+        return Config(telegram == telegram, gmail=gmail, general=general, districts=districts)
 
 
 # accessing the site
@@ -46,6 +68,7 @@ def starting_link():
 
 # calling the starting_link function
 districts = starting_link()
+print(districts)
 
 
 # filling in a FLATS dictionary with all the data
@@ -94,6 +117,8 @@ def number_of_pages(district_number):
         price_m2 = 5
         full_price = 6
 
+        print(len(info))
+
         # filling in the FLATS dictionary
         for n in range(0, len(info)):
             link = info[n]
@@ -115,6 +140,8 @@ def number_of_pages(district_number):
             full_price += 7
 
 # checking whether the dictionary is empty, creating a csv file and sending it to our email
+
+
 def main():
 
     for district in districts:
@@ -125,26 +152,29 @@ def main():
                                      for i in FLATS.keys()},
                                     orient='index')
         # filtering and manipulating the dataframe
-        df["full price"] = df["full price"].replace({"  €": "", ",": ""}, regex=True)
-        df["price per m^2"] = df["price per m^2"].replace({" €": "", ",": ""}, regex=True)
+        df["full price"] = df["full price"].replace(
+            {"  €": "", ",": ""}, regex=True)
+        df["price per m^2"] = df["price per m^2"].replace(
+            {" €": "", ",": ""}, regex=True)
         df["full price"] = df["full price"].astype(int)
         df["price per m^2"] = df["price per m^2"].astype(int)
         df["m^2"] = df["m^2"].astype(int)
+        print(df)
         df = df.loc[
             (df["full price"] <= "your value") & (df["price per m^2"] <= "your value") & (df["price per m^2"] >= "your value") & (
-                        df["m^2"] >= "your value")]
+                df["m^2"] >= "your value")]
         df.to_csv("flats.csv")
 
         MSG.attach(BODY_PART)
         with open("flats.csv", 'rb') as file:
             # Attach the file with filename to the email
             MSG.attach(MIMEApplication(file.read(), Name="flats.csv"))
-        with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
-            connection.starttls()
-            connection.login(my_email, password)
-            connection.sendmail(from_addr=MSG["From"],
-                                to_addrs=MSG['To'],
-                                msg=MSG.as_string())
+        # with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
+        #     connection.starttls()
+        #     connection.login(my_email, password)
+        #     connection.sendmail(from_addr=MSG["From"],
+        #                         to_addrs=MSG['To'],
+        #                         msg=MSG.as_string())
     else:
         with smtplib.SMTP("smtp.gmail.com", port=587) as connection:
             connection.starttls()
@@ -158,4 +188,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
