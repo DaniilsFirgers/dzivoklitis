@@ -1,3 +1,4 @@
+from typing import List
 from bs4 import BeautifulSoup
 import requests
 import pandas as pd
@@ -7,6 +8,7 @@ from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
 import toml
 from pathlib import Path
+import os
 
 from scraper.config import Config, District, GeneralConfig, GmailConfig, TelegramConfig
 
@@ -27,7 +29,9 @@ class FlatsParser:
         self.config = self.load_config()
 
     def load_config(self):
-        config_path = Path("../config.toml").resolve()
+
+        cwd = os.getcwd()
+        config_path = Path(cwd) / "config.toml"
         with open(config_path, "r") as file:
             data = toml.load(file)
 
@@ -36,10 +40,55 @@ class FlatsParser:
         general = GeneralConfig(**data["general"])
         districts = [District(**district) for district in data["districts"]]
 
-        return Config(telegram == telegram, gmail=gmail, general=general, districts=districts)
+        return Config(telegram=telegram, gmail=gmail, general=general, districts=districts)
 
+    def start(self, districts: List[District]) -> None:
+        for district in districts:
+            pages_link = f"https://www.ss.lv/en/real-estate/flats/{self.config.general.city_name}/{district.name}/{self.config.general.look_back_argument}/{self.config.general.deal_type}/"
+            print(pages_link)
+        pass
+
+    def get_districts_list(self) -> tuple[List[int], List[str]]:
+        districts_found = []
+        warnings = []
+        link = f"https://www.ss.lv/en/real-estate/flats/{self.config.general.city_name.lower()}/"
+
+        try:
+            response = requests.get(link, timeout=10)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            raise ValueError(f"Error accessing the website: {e}")
+
+        try:
+            soup = BeautifulSoup(response.text, "html.parser")
+            district_elements = soup.find_all(name="h4", class_="category")
+
+            if not district_elements:
+                raise ValueError("No district elements found on page")
+
+            for index, district in enumerate(district_elements):
+                area: str = district.getText().strip().lower().replace(" ", "-")
+                districts_found.append(area)
+
+                if index == 38:  # Optional limit on number of districts
+                    break
+
+            final_districts = []
+            for district in self.config.districts:
+                try:
+                    districts_found.index(district.name)
+                    final_districts.append(district)
+                except ValueError:
+                    warnings.append(f"District {district.name} not found")
+
+            return final_districts, warnings
+
+        except Exception as e:
+            raise ValueError(f"Error parsing district data: {e}")
 
 # accessing the site
+
+
 def starting_link():
     selected_districts = []
     link = "https://www.ss.lv/en/real-estate/flats/riga/"
@@ -57,18 +106,15 @@ def starting_link():
             new_area = area
         LIST_OF_DISTRICTS.append(new_area)
         if index == 38:
+
             break
+    print(LIST_OF_DISTRICTS)
     # appending a list with districts we are interested in
     for name in ("centre", "plyavnieki", "purvciems", "mezhapark"):
         selected_district = LIST_OF_DISTRICTS.index(name)
         selected_districts.append(selected_district)
 
     return selected_districts
-
-
-# calling the starting_link function
-districts = starting_link()
-print(districts)
 
 
 # filling in a FLATS dictionary with all the data
@@ -187,4 +233,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    scraper = FlatsParser()
+    try:
+        districts, warnings = scraper.get_districts_list()
+    except Exception as e:
+        # Here we will send intial message to ther messenger if fail the parsing
+        print(f"Error: {e}")
+    else:
+        if warnings:
+            # here we will send message to the messenger about warnings
+            print("\n".join(warnings))
+        scraper.start(districts)
+    # main()
