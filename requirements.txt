@@ -3,3 +3,4 @@ requests
 pandas
 toml
 tinydb
+pytelegrambotapi

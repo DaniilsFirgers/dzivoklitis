@@ -9,6 +9,7 @@ from bs4.element import Tag
 import re
 
 from scraper.config import Config, District, GeneralConfig, GmailConfig, TelegramConfig
+from scraper.telegram import TelegramBot
 
 
 class Flat:
@@ -31,6 +32,8 @@ class Flat:
 class FlatsParser:
     def __init__(self):
         self.config = self.load_config()
+        self.telegram_bot = TelegramBot(
+            self.config.telegram.token, self.config.telegram.chat_id)
 
     def load_config(self):
 
