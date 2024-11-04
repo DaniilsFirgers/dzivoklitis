@@ -1,3 +1,4 @@
+import time
 from typing import List
 from bs4 import BeautifulSoup, ResultSet
 import requests
@@ -6,27 +7,9 @@ import toml
 from pathlib import Path
 import os
 from bs4.element import Tag
-import re
-
 from scraper.config import Config, District, GeneralConfig, GmailConfig, TelegramConfig
+from scraper.flat import Flat
 from scraper.telegram import TelegramBot
-
-
-class Flat:
-    def __init__(self, id: str, link: str):
-        self.id = id
-        self.link = link
-
-    def add_info(self, raw_info: list[str]):
-        if len(raw_info) != 7:
-            raise ValueError("Incorrect number of elements in raw_info")
-        self.street = raw_info[0]
-        self.rooms = int(raw_info[1])
-        self.m2 = float(raw_info[2])
-        self.floor = raw_info[3]
-        self.series = raw_info[4]
-        self.price_per_m2 = int(re.sub(r"[^\d]", "", raw_info[5]))
-        self.full_price = int(re.sub(r"[^\d]", "", raw_info[6]))
 
 
 class FlatsParser:
@@ -61,8 +44,6 @@ class FlatsParser:
                 page = int(page_num.get_text())
                 pages.append(page)
 
-            flats = []
-
             for page in pages:
                 page_link = f"https://www.ss.lv/en/real-estate/flats/riga/{district.name}/{self.config.general.look_back_argument}/{self.config.general.deal_type}/page{page}.html"
                 page_res = requests.get(page_link)
@@ -84,9 +65,12 @@ class FlatsParser:
                     chunk = streets[i:i + 7]
                     text = [street.get_text() for street in chunk]
 
-                    flat = Flat(id, link)
+                    flat = Flat(id, link, district.name)
                     flat.add_info(text)
-                    flats.append(flat)
+                    self.telegram_bot.send_message(flat)
+                    # TODO: Implement a global countrer to limit the number of messages sent
+                    # TODO:  hande errors here
+                    time.sleep(0.2)
 
     def get_districts_list(self) -> tuple[List[int], List[str]]:
         districts_found = []
