@@ -76,11 +76,11 @@ class FlatsParser:
                         flats_found[district.name].append(flat)
 
         for district, flats in flats_found.items():
-            msg = f"Found {len(flats)} flats in {district}"
+            msg = f"Found *{len(flats)}* flats in *{district}*"
             self.telegram_bot.send_message(msg)
             # Iterate over each Student instance in the list of students for that subject
             for index, flat in enumerate(flats, start=1):
-                msg = f"{index}/{len(flats)}"
+                msg = f"*{index}/{len(flats)}*"
                 self.telegram_bot.send_flat_message(flat, msg)
                 time.sleep(self.config.general.message_sleep)
 
