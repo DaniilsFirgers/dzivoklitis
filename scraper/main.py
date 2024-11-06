@@ -1,8 +1,7 @@
 import time
-from typing import List
+from typing import Dict, List
 from bs4 import BeautifulSoup, ResultSet
 import requests
-import pandas as pd
 import toml
 from pathlib import Path
 import os
@@ -33,6 +32,7 @@ class FlatsParser:
         return Config(telegram=telegram, gmail=gmail, general=general, districts=districts)
 
     def start(self, districts: List[District]) -> None:
+        flats_found: Dict[str, List[Flat]] = {}
         for district in districts:
             pages_link = f"https://www.ss.lv/en/real-estate/flats/{self.config.general.city_name}/{district.name}/{self.config.general.look_back_argument}/{self.config.general.deal_type}/"
             response = requests.get(pages_link)
@@ -66,11 +66,23 @@ class FlatsParser:
                     text = [street.get_text() for street in chunk]
 
                     flat = Flat(id, link, district.name)
-                    flat.add_info(text)
-                    self.telegram_bot.send_message(flat)
-                    # TODO: Implement a global countrer to limit the number of messages sent
-                    # TODO:  hande errors here
-                    time.sleep(0.2)
+                    try:
+                        flat.add_info(text, district)
+                    except ValueError as e:
+                        continue
+                    if district.name not in flats_found:
+                        flats_found[district.name] = [flat]
+                    else:
+                        flats_found[district.name].append(flat)
+
+        for district, flats in flats_found.items():
+            msg = f"Found {len(flats)} flats in {district}"
+            self.telegram_bot.send_message(msg)
+            # Iterate over each Student instance in the list of students for that subject
+            for index, flat in enumerate(flats, start=1):
+                msg = f"{index}/{len(flats)}"
+                self.telegram_bot.send_flat_message(flat, msg)
+                time.sleep(self.config.general.message_sleep)
 
     def get_districts_list(self) -> tuple[List[int], List[str]]:
         districts_found = []
