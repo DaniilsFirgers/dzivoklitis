@@ -5,9 +5,9 @@ from typing import List, Literal
 @dataclass(frozen=True)
 class GeneralConfig:
     city_name: str
-    rooms: int
     deal_type: Literal["buy", "sell", "hand_over"]
     look_back_argument: Literal["today", "today-2", "today-5"]
+    message_sleep: int
 
 
 @dataclass(frozen=True)
@@ -29,6 +29,10 @@ class GmailConfig:
 class District:
     name: str
     price_per_m2: int
+    rooms: int
+    min_m2: int
+    min_floor: int
+    last_floor: bool
 
 
 @dataclass(frozen=True)
