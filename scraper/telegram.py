@@ -9,14 +9,22 @@ class TelegramBot:
         self.bot = telebot.TeleBot(token)
         self.chat_id = chat_id
 
-    def send_message(self, flat: Flat):
+    def send_message(self, message: str):
+        self.bot.send_message(
+            chat_id=self.chat_id,
+            text=message,
+            parse_mode="Markdown"
+        )
+
+    def send_flat_message(self, flat: Flat, id: str):
         msg_txt = (
+            f"#: {id}\n"
             f"*District*: {flat.district}\n"
             f"*Street*: {flat.street}\n"
             f"*Series*: {flat.series}\n"
             f"*Rooms*: {flat.rooms}\n"
             f"*M2*: {flat.m2}\n"
-            f"*Floor*: {flat.floor}\n"
+            f"*Floor*: {flat.floor}/{flat.last_floor}\n"
             f"*Price per m2*: {flat.price_per_m2}\n"
             f"*Full price*: {flat.full_price}\n"
         )
