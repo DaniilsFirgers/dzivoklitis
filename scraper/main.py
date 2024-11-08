@@ -9,6 +9,7 @@ from bs4.element import Tag
 from scraper.config import Config, District, GeneralConfig, GmailConfig, TelegramConfig
 from scraper.flat import Flat
 from scraper.telegram import TelegramBot
+from scraper.tiny_db import FlatsTinyDb
 
 
 class FlatsParser:
@@ -16,6 +17,8 @@ class FlatsParser:
         self.config = self.load_config()
         self.telegram_bot = TelegramBot(
             self.config.telegram.token, self.config.telegram.chat_id)
+        self.db = FlatsTinyDb(
+            to_delete_interval=self.config.general.records_delete_interval)
 
     def load_config(self):
 
