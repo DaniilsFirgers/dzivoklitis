@@ -10,6 +10,7 @@ from scraper.config import Config, District, GeneralConfig, GmailConfig, Telegra
 from scraper.flat import Flat
 from scraper.telegram import TelegramBot
 from scraper.tiny_db import FlatsTinyDb
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 
 class FlatsParser:
@@ -139,7 +140,15 @@ if __name__ == "__main__":
         err_msg = f"Error starting scraper: {e}"
         scraper.telegram_bot.send_message(err_msg)
     else:
+        scheduler = BlockingScheduler()
         scraper.telegram_bot.send_message("Starting the scraper")
         if warnings:
             msg: str = "*Received the following warnings*:\n".join(warnings)
-        scraper.start(districts)
+            scraper.telegram_bot.send_message(msg)
+
+        scheduler.add_job(scraper.start, "cron",
+                          minute=0, args=[districts])
+        try:
+            scheduler.start()
+        except (KeyboardInterrupt, SystemExit):
+            pass
