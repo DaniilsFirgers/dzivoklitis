@@ -8,6 +8,8 @@ class GeneralConfig:
     deal_type: Literal["buy", "sell", "hand_over"]
     look_back_argument: Literal["today", "today-2", "today-5"]
     message_sleep: int
+    records_delete_interval: int
+    db_name: str
 
 
 @dataclass(frozen=True)
