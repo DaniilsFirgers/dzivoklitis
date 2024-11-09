@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 
 
 class FlatsTinyDb:
-    def __init__(self, db_path='flats_db.json', to_delete_interval=30):
+    def __init__(self, db_name, to_delete_interval=30):
         """Initialize the database."""
-        self.db = TinyDB(db_path)
-        self.table = self.db.table('flats')
+        self.db = TinyDB(f"{db_name}.json")
+        self.table = self.db.table(db_name)
         self.to_delete_interval = to_delete_interval
 
     def insert(self, key, timestamp):
