@@ -17,8 +17,8 @@ class FlatsParser:
         self.config = self.load_config()
         self.telegram_bot = TelegramBot(
             self.config.telegram.token, self.config.telegram.chat_id)
-        self.db = FlatsTinyDb(
-            to_delete_interval=self.config.general.records_delete_interval)
+        self.db = FlatsTinyDb(db_name=self.config.general.db_name,
+                              to_delete_interval=self.config.general.records_delete_interval)
 
     def load_config(self):
 
@@ -64,6 +64,10 @@ class FlatsParser:
                     info = description.get("href")
                     link = f"https://www.ss.lv/{info}"
                     id = description.get("id")
+
+                    if self.db.exists(id):
+                        continue
+                    self.db.insert(id, int(time.time() * 1000))
 
                     chunk = streets[i:i + 7]
                     text = [street.get_text() for street in chunk]
@@ -131,11 +135,11 @@ if __name__ == "__main__":
     try:
         districts, warnings = scraper.get_districts_list()
     except Exception as e:
-        # Here we will send intial message to ther messenger if fail the parsing
-        print(f"Error: {e}")
+        scraper.db.close()
+        err_msg = f"Error starting scraper: {e}"
+        scraper.telegram_bot.send_message(err_msg)
     else:
+        scraper.telegram_bot.send_message("Starting the scraper")
         if warnings:
-            # here we will send message to the messenger about warnings
-            print("\n".join(warnings))
+            msg: str = "*Received the following warnings*:\n".join(warnings)
         scraper.start(districts)
-    # main()
