@@ -9,17 +9,17 @@ from bs4.element import Tag
 from scraper.config import Config, District, GeneralConfig, GmailConfig, TelegramConfig
 from scraper.flat import Flat
 from scraper.telegram import TelegramBot
-from scraper.tiny_db import FlatsTinyDb
+from scraper.database import FlatsTinyDb
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 
 class FlatsParser:
     def __init__(self):
         self.config = self.load_config()
-        self.telegram_bot = TelegramBot(
-            self.config.telegram.token, self.config.telegram.chat_id)
-        self.db = FlatsTinyDb(db_name=self.config.general.db_name,
+        self.db = FlatsTinyDb(parsed_db_name=self.config.general.db_name,
                               to_delete_interval=self.config.general.records_delete_interval)
+        self.telegram_bot = TelegramBot(
+            self.config.telegram.token, self.config.telegram.chat_id, self.db)
 
     def load_config(self):
 
@@ -67,18 +67,20 @@ class FlatsParser:
                     link = f"https://www.ss.lv/{info}"
                     id = description.get("id")
 
-                    if self.db.exists(id):
+                    if self.db.exists(id, "parsed"):
                         continue
-                    self.db.insert(id, int(time.time() * 1000))
 
                     chunk = streets[i:i + 7]
                     text = [street.get_text() for street in chunk]
 
                     flat = Flat(id, link, district.name)
+
                     try:
                         flat.add_info(text, district)
-                    except ValueError as e:
+                    except ValueError:
                         continue
+
+                    self.db.insert(id, flat)
                     if district.name not in flats_found:
                         flats_found[district.name] = [flat]
                     else:
