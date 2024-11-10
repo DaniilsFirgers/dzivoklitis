@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup, ResultSet
 import requests
 import toml
 from pathlib import Path
-import os
 from bs4.element import Tag
 from scraper.config import Config, District, GeneralConfig, GmailConfig, TelegramConfig
 from scraper.flat import Flat
@@ -22,9 +21,7 @@ class FlatsParser:
             self.config.telegram.token, self.config.telegram.chat_id, self.db)
 
     def load_config(self):
-
-        cwd = os.getcwd()
-        config_path = Path(cwd) / "config.toml"
+        config_path = Path("/app/config.toml")
         with open(config_path, "r") as file:
             data = toml.load(file)
 

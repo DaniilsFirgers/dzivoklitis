@@ -1,5 +1,5 @@
+from pathlib import Path
 import time
-import redis
 from tinydb import TinyDB, Query
 from datetime import datetime, timedelta
 
@@ -9,7 +9,8 @@ from scraper.flat import Flat
 class FlatsTinyDb:
     def __init__(self, parsed_db_name, to_delete_interval=30):
         """Initialize the database."""
-        self.db = TinyDB(f"{parsed_db_name}.json")
+        db_path = Path(f"/app/{parsed_db_name}.json")
+        self.db = TinyDB(db_path)
         self.parsed_db = self.db.table("parsed")
         self.favorites_db = self.db.table("favorites")
         self.to_delete_interval = to_delete_interval
