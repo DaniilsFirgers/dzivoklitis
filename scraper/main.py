@@ -36,6 +36,7 @@ class FlatsParser:
         return Config(telegram=telegram, gmail=gmail, general=general, districts=districts)
 
     def start(self, districts: List[District]) -> None:
+        self.telegram_bot.send_message("Starting the scraper")
         flats_found: Dict[str, List[Flat]] = {}
         for district in districts:
             pages_link = f"https://www.ss.lv/en/real-estate/flats/{self.config.general.city_name}/{district.name}/{self.config.general.look_back_argument}/{self.config.general.deal_type}/"
@@ -92,6 +93,9 @@ class FlatsParser:
                 self.telegram_bot.send_flat_message(flat, msg)
                 time.sleep(self.config.general.message_sleep)
 
+    def cleanup(self):
+        self.db.delete_old_ads()
+
     def get_districts_list(self) -> tuple[List[int], List[str]]:
         districts_found = []
         warnings = []
@@ -141,13 +145,15 @@ if __name__ == "__main__":
         scraper.telegram_bot.send_message(err_msg)
     else:
         scheduler = BlockingScheduler()
-        scraper.telegram_bot.send_message("Starting the scraper")
+        scraper.start(districts)
         if warnings:
             msg: str = "*Received the following warnings*:\n".join(warnings)
             scraper.telegram_bot.send_message(msg)
 
         scheduler.add_job(scraper.start, "cron",
                           minute=0, args=[districts])
+        scheduler.add_job(scraper.cleanup, "cron",
+                          day_of_week="mon", hour=0, minute=0)
         try:
             scheduler.start()
         except (KeyboardInterrupt, SystemExit):
