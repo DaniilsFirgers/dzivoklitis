@@ -2,10 +2,13 @@ name: Build and Push docker development image to Docker Hub and trigger deployme
 
 on:
   push:
-    branches: [master]
+    branches: [main]
 
   pull_request:
-    branches: [master]
+    branches: [main]
+
+  workflow_dispatch:
+    branches: [main]
 
 jobs:
   build:
