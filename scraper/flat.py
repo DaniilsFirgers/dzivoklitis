@@ -4,10 +4,28 @@ from scraper.config import District
 
 
 class Flat:
-    def __init__(self, id: str, link: str, district: str):
+    def __init__(self, id: str, link: str, district: str, **kwargs):
         self.id = id
         self.link = link
         self.district = district
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "link": self.link,
+            "district": self.district,
+            "price_per_m2": self.price_per_m2,
+            "rooms": self.rooms,
+            "street": self.street,
+            "m2": self.m2,
+            "floor": self.floor,
+            "last_floor": self.last_floor,
+            "series": self.series,
+            "full_price": self.full_price
+        }
 
     def add_info(self, raw_info: list[str], settings: District):
         if len(raw_info) != 7:
