@@ -1,7 +1,7 @@
-beautifulsoup4
-requests
-pandas
-toml
-tinydb
-pytelegrambotapi
-apscheduler
+beautifulsoup4==4.12.3
+requests==2.25.1
+pandas==2.2.3
+toml==0.10.2
+tinydb===4.7.1
+pytelegrambotapi==4.23.0
+apscheduler==3.10.1
