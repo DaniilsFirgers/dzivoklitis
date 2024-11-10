@@ -15,6 +15,8 @@ class TelegramBot:
 
         self.bot.callback_query_handler(func=lambda call: call.data.startswith(
             "add_to_favorites:"))(self.handle_add_to_favorites)
+        self.bot.callback_query_handler(func=lambda call: call.data.startswith(
+            "remove_from_favorites:"))(self.handle_remove_from_favorites)
         self.bot.message_handler(commands=["favorites"])(self.send_favorites)
         Thread(target=self.start_polling, daemon=True).start()
 
@@ -28,6 +30,17 @@ class TelegramBot:
         self.tiny_db.insert(id, flat["flat"], "favorites")
         self.bot.answer_callback_query(
             call.id, "Flat added to favorites ❤️"
+        )
+
+    def handle_remove_from_favorites(self, call):
+        id = call.data.split(":")[1]
+        if not self.tiny_db.exists(id, "favorites"):
+            return self.bot.answer_callback_query(
+                call.id, "This flat is not in your favorites list 🤔")
+
+        self.tiny_db.favorites_db.remove(self.tiny_db.query.id == id)
+        self.bot.answer_callback_query(
+            call.id, "Flat removed from favorites 🗑️"
         )
 
     def send_message(self, message: str):
@@ -48,10 +61,21 @@ class TelegramBot:
         for counter, favorite in enumerate(favorites, start=1):
             flat_obj = Flat(**favorite["flat"])
             flat_msg = self.flat_to_msg(flat_obj, counter)
+
+            markup = types.InlineKeyboardMarkup()
+            markup.add(
+                types.InlineKeyboardButton(
+                    "🔍 View Link", url=flat_obj.link),
+            )
+            markup.add(
+                types.InlineKeyboardButton(
+                    "❌ Remove", callback_data=f"remove_from_favorites:{flat_obj.id}"),
+            )
             self.bot.send_message(
                 chat_id=self.chat_id,
                 text=flat_msg,
-                parse_mode="Markdown"
+                parse_mode="Markdown",
+                reply_markup=markup
             )
             time.sleep(0.5)
 

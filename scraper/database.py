@@ -13,15 +13,16 @@ class FlatsTinyDb:
         self.parsed_db = self.db.table("parsed")
         self.favorites_db = self.db.table("favorites")
         self.to_delete_interval = to_delete_interval
+        self.query = Query()
 
     def get(self, key: str, db_name: str = "parsed"):
         """
         Get flat info from the database by its key.
         """
         if db_name == "parsed":
-            return self.parsed_db.get(Query().id == key)
+            return self.parsed_db.get(self.query.id == key)
         elif db_name == "favorites":
-            return self.favorites_db.get(Query().id == key)
+            return self.favorites_db.get(self.query.id == key)
         else:
             raise ValueError(
                 "Invalid db_name. Expected 'parsed' or 'favorites'.")
@@ -54,16 +55,16 @@ class FlatsTinyDb:
         cutoff_timestamp = int(one_month_ago.timestamp()
                                * 1000)  # Convert to milliseconds
 
-        self.parsed_db.remove(Query().timestamp < cutoff_timestamp)
+        self.parsed_db.remove(self.query.timestamp < cutoff_timestamp)
 
     def exists(self, key: str, db_name: str = "parsed"):
         """
         Check if a flat record with a certain key exists.
         """
         if db_name == "parsed":
-            return self.parsed_db.get(Query().id == key)
+            return self.parsed_db.get(self.query.id == key)
         elif db_name == "favorites":
-            return self.favorites_db.get(Query().id == key)
+            return self.favorites_db.get(self.query.id == key)
         else:
             raise ValueError(
                 "Invalid db_name. Expected 'parsed' or 'favorites'.")
