@@ -14,17 +14,8 @@ class GeneralConfig:
 
 @dataclass(frozen=True)
 class TelegramConfig:
-    is_active: bool
     token: str
     chat_id: str
-
-
-@dataclass(frozen=True)
-class GmailConfig:
-    is_active: bool
-    username: str
-    password: str
-    to_email: str
 
 
 @dataclass(frozen=True)
@@ -41,5 +32,4 @@ class District:
 class Config:
     general: GeneralConfig
     telegram: TelegramConfig
-    gmail: GmailConfig
     districts:    List[District]

@@ -26,11 +26,10 @@ class FlatsParser:
             data = toml.load(file)
 
         telegram = TelegramConfig(**data["telegram"])
-        gmail = GmailConfig(**data["gmail"])
         general = GeneralConfig(**data["general"])
         districts = [District(**district) for district in data["districts"]]
 
-        return Config(telegram=telegram, gmail=gmail, general=general, districts=districts)
+        return Config(telegram=telegram, general=general, districts=districts)
 
     def start(self, districts: List[District]) -> None:
         self.telegram_bot.send_message("Starting the scraper")
