@@ -1,5 +1,8 @@
 name: Build and Push docker development image to Docker Hub and trigger deployment
 
+env:
+  DEPLOY_PACKAGE_NAME_FILE: "production.zip"
+
 on:
   push:
     branches: [main]
@@ -36,3 +39,30 @@ jobs:
           tags: ${{ secrets.DOCKER_REGISTRY_USERNAME }}/flats-parser:python
           cache-to: type=gha,mode=max
           cache-from: type=gha
+
+      - name: Create zip scraper deployment package
+        run: zip -r ${{ env.DEPLOY_PACKAGE_NAME_FILE }} ./scraper/ -x *.git*
+
+      - name: Copy scraper zip to ligthsail server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.PW_LIGHTSAIL_IP }}
+          username: ${{ secrets.PW_LIGHTSAIL_USERNAME }}
+          key: ${{ secrets.SSH_PW_PRIVATE_KEY }}
+          password: ""
+          passphrase: ""
+          port: 22
+          source: ${{ env.DEPLOY_PACKAGE_NAME_FILE }}
+          target: "/home/${{ secrets.PW_LIGHTSAIL_USERNAME }}"
+
+      - name: Connect to AWS Lightsail and extract zip
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.PW_LIGHTSAIL_IP }}
+          username: ${{ secrets.PW_LIGHTSAIL_USERNAME }}
+          key: ${{ secrets.SSH_PW_PRIVATE_KEY }}
+          password: ""
+          passphrase: ""
+          port: 22
+          script: |
+            unzip -q -o /home/${{ secrets.PW_LIGHTSAIL_USERNAME  }}/${{ env.DEPLOY_PACKAGE_NAME_FILE }} -d /home/${{ secrets.PW_LIGHTSAIL_USERNAME }}/scraper
