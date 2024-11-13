@@ -5,3 +5,4 @@ toml==0.10.2
 tinydb===4.7.1
 pytelegrambotapi==4.23.0
 apscheduler==3.10.1
+pytz==2024.2
