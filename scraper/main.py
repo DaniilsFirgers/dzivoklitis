@@ -5,11 +5,12 @@ import requests
 import toml
 from pathlib import Path
 from bs4.element import Tag
-from scraper.config import Config, District, GeneralConfig, GmailConfig, TelegramConfig
+from scraper.config import Config, District, GeneralConfig,  TelegramConfig
 from scraper.flat import Flat
 from scraper.telegram import TelegramBot
 from scraper.database import FlatsTinyDb
 from apscheduler.schedulers.blocking import BlockingScheduler
+import pytz
 
 
 class FlatsParser:
@@ -32,7 +33,6 @@ class FlatsParser:
         return Config(telegram=telegram, general=general, districts=districts)
 
     def start(self, districts: List[District]) -> None:
-        self.telegram_bot.send_message("Starting the scraper")
         flats_found: Dict[str, List[Flat]] = {}
         for district in districts:
             pages_link = f"https://www.ss.lv/en/real-estate/flats/{self.config.general.city_name}/{district.name}/{self.config.general.look_back_argument}/{self.config.general.deal_type}/"
@@ -142,14 +142,16 @@ if __name__ == "__main__":
         err_msg = f"Error starting scraper: {e}"
         scraper.telegram_bot.send_message(err_msg)
     else:
-        scheduler = BlockingScheduler()
+        scheduler = BlockingScheduler(timezone=pytz.timezone("Europe/Riga"))
+        scraper.telegram_bot.send_message("Starting the scraper")
         scraper.start(districts)
         if warnings:
             msg: str = "*Received the following warnings*:\n".join(warnings)
             scraper.telegram_bot.send_message(msg)
 
         scheduler.add_job(scraper.start, "cron",
-                          minute=0, args=[districts])
+                          hour="9,12,15,18,21", minute=0, args=[districts])
+
         scheduler.add_job(scraper.cleanup, "cron",
                           day_of_week="mon", hour=0, minute=0)
         try:
