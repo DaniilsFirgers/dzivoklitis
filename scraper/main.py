@@ -9,7 +9,7 @@ from scraper.config import Config, District, GeneralConfig,  TelegramConfig
 from scraper.flat import Flat
 from scraper.telegram import TelegramBot
 from scraper.database import FlatsTinyDb
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 
 
@@ -33,6 +33,8 @@ class FlatsParser:
         return Config(telegram=telegram, general=general, districts=districts)
 
     def start(self, districts: List[District]) -> None:
+        self.telegram_bot.send_message("Starting the scraper as asd ")
+        print("Starting the scraper in start command")
         flats_found: Dict[str, List[Flat]] = {}
         for district in districts:
             pages_link = f"https://www.ss.lv/en/real-estate/flats/{self.config.general.city_name}/{district.name}/{self.config.general.look_back_argument}/{self.config.general.deal_type}/"
@@ -62,7 +64,6 @@ class FlatsParser:
                     info = description.get("href")
                     link = f"https://www.ss.lv/{info}"
                     id = description.get("id")
-
                     if self.db.exists(id, "parsed"):
                         continue
 
@@ -84,6 +85,7 @@ class FlatsParser:
 
         for district, flats in flats_found.items():
             msg = f"Found *{len(flats)}* flats in *{district}*"
+            print(msg)
             self.telegram_bot.send_message(msg)
             # Iterate over each Student instance in the list of students for that subject
             for index, flat in enumerate(flats, start=1):
@@ -142,19 +144,32 @@ if __name__ == "__main__":
         err_msg = f"Error starting scraper: {e}"
         scraper.telegram_bot.send_message(err_msg)
     else:
-        scheduler = BlockingScheduler(timezone=pytz.timezone("Europe/Riga"))
+        scheduler = BackgroundScheduler()
+        scheduler.configure(timezone=pytz.timezone("Europe/Riga"))
+        print("Starting the scraper")
         scraper.telegram_bot.send_message("Starting the scraper")
-        scraper.start(districts)
+        # scraper.start(districts)
         if warnings:
-            msg: str = "*Received the following warnings*:\n".join(warnings)
+            msg: str = "*Received the following warnings*:\n" + \
+                "\n".join(warnings)
             scraper.telegram_bot.send_message(msg)
 
-        scheduler.add_job(scraper.start, "cron",
-                          hour="9,12,15,18,21", minute=0, args=[districts])
+        scheduler.add_job(scraper.start, "interval",
+                          hour='9,12,15,18,21', arguments=[districts], minute='0', max_instances=1)
 
         scheduler.add_job(scraper.cleanup, "cron",
                           day_of_week="mon", hour=0, minute=0)
+
+        scheduler.start()
+
+        jobs = scheduler.get_jobs()
+        for job in jobs:
+            print(job)
+
         try:
-            scheduler.start()
+            while True:
+                time.sleep(1)
         except (KeyboardInterrupt, SystemExit):
-            pass
+            scheduler.shutdown()
+            scraper.db.close()
+            scraper.telegram_bot.send_message("Stopping the scraper")
