@@ -55,7 +55,7 @@ jobs:
           source: ${{ env.DEPLOY_PACKAGE_NAME_FILE }}
           target: "/home/${{ secrets.PW_LIGHTSAIL_USERNAME }}"
 
-      - name: Connect to AWS Lightsail and extract zip
+      - name: Connect to AWS Lightsail, extract zip and run deploy.sh script
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.PW_LIGHTSAIL_IP }}
