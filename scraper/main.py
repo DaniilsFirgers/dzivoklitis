@@ -34,8 +34,7 @@ class FlatsParser:
         return Config(telegram=telegram, general=general, districts=districts)
 
     def start(self, districts: List[District]) -> None:
-        self.telegram_bot.send_message("Starting the scraper as asd ")
-        print("Starting the scraper in start command")
+        self.telegram_bot.send_message("Start function triggered")
         flats_found: Dict[str, List[Flat]] = {}
         for district in districts:
             pages_link = f"https://www.ss.lv/en/real-estate/flats/{self.config.general.city_name}/{district.name}/{self.config.general.look_back_argument}/{self.config.general.deal_type}/"
@@ -86,7 +85,6 @@ class FlatsParser:
 
         for district, flats in flats_found.items():
             msg = f"Found *{len(flats)}* flats in *{district}*"
-            print(msg)
             self.telegram_bot.send_message(msg)
             # Iterate over each Student instance in the list of students for that subject
             for index, flat in enumerate(flats, start=1):
@@ -154,6 +152,9 @@ if __name__ == "__main__":
             msg: str = "*Received the following warnings*:\n" + \
                 "\n".join(warnings)
             scraper.telegram_bot.send_message(msg)
+
+        scheduler.add_job(scraper.start, "cron",
+                          hour="9,12,14,15,18,21", minute=0, args=[districts])
 
         scheduler.start()
 
