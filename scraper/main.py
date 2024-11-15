@@ -11,6 +11,7 @@ from scraper.telegram import TelegramBot
 from scraper.database import FlatsTinyDb
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
+from apscheduler.triggers.cron import CronTrigger
 
 
 class FlatsParser:
@@ -154,17 +155,7 @@ if __name__ == "__main__":
                 "\n".join(warnings)
             scraper.telegram_bot.send_message(msg)
 
-        scheduler.add_job(scraper.start, "interval",
-                          hour='9,12,15,18,21', arguments=[districts], minute='0', max_instances=1)
-
-        scheduler.add_job(scraper.cleanup, "cron",
-                          day_of_week="mon", hour=0, minute=0)
-
         scheduler.start()
-
-        jobs = scheduler.get_jobs()
-        for job in jobs:
-            print(job)
 
         try:
             while True:

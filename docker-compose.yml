@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  flats-parser:
+  flats-pooler:
     image: daniilsfirgers/flats-parser:python
     volumes:
       - ./config.toml:/app/config.toml 
