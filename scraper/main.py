@@ -147,14 +147,14 @@ if __name__ == "__main__":
         scheduler.configure(timezone=pytz.timezone("Europe/Riga"))
         print("Starting the scraper")
         scraper.telegram_bot.send_message("Starting the scraper")
-        # scraper.start(districts)
+        scraper.start(districts)
         if warnings:
             msg: str = "*Received the following warnings*:\n" + \
                 "\n".join(warnings)
             scraper.telegram_bot.send_message(msg)
 
         scheduler.add_job(scraper.start, "cron",
-                          hour="9,12,13, 14,15,18,21", minute=30, args=[districts])
+                          hour="9,12,15,18,21", minute=30, args=[districts])
 
         scheduler.start()
 
