@@ -5,11 +5,11 @@ compose_file=docker-compose.yml
 echo "[+] Removing containers, volume, images and networks older than 1 week..."
 docker system prune --force --filter "until=168h" --all
 
-echo "[+] Stopping any running containers from docker-compose..."
-docker-compose down
+echo "[+] Stopping any running containers from docker compose..."
+docker compose down
 
-echo "[+] Starting new container using docker-compose in detached mode..."
-docker-compose up -d
+echo "[+] Starting new container using docker compose in detached mode..."
+docker compose up -d
 
 if [[ $? -eq 0 ]]; then
     echo "[✔] Deployment successful!"
