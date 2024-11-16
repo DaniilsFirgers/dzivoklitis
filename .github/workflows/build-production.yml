@@ -1,4 +1,4 @@
-name: Build and Push docker development image to Docker Hub and trigger deployment
+name: Build and Push docker production image to Docker Hub and trigger deployment
 
 env:
   DEPLOY_PACKAGE_NAME_FILE: "production.zip"
@@ -36,7 +36,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_REGISTRY_USERNAME }}/flats-parser:python
+          tags: ${{ secrets.DOCKER_REGISTRY_USERNAME }}/flats-parser:production
           cache-to: type=gha,mode=max
           cache-from: type=gha
 
