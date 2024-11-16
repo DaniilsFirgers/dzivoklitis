@@ -35,6 +35,8 @@ class Flat:
             re.sub(r"[^\d]", "", raw_info[5]))
         if (settings.price_per_m2 < self.price_per_m2):
             raise ValueError("Price per m2 is higher than the limit")
+        if (self.price_per_m2 < settings.min_price_per_m2):
+            raise ValueError("Price per m2 is lower than the limit")
         self.rooms = self.try_parse_int(raw_info[1])
         if (self.rooms != settings.rooms):
             raise ValueError("Rooms do not match the settings")
