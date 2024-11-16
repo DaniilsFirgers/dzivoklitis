@@ -21,7 +21,8 @@ class TelegramConfig:
 @dataclass(frozen=True)
 class District:
     name: str
-    price_per_m2: int
+    price_per_m2: int  # TODO:  rename to max_price_per_m2
+    min_price_per_m2: int
     rooms: int
     min_m2: int
     min_floor: int
