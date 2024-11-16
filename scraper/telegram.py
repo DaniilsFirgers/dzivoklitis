@@ -9,7 +9,7 @@ from threading import Thread
 
 class TelegramBot:
     def __init__(self, token, chat_id, tiny_db: FlatsTinyDb):
-        self.bot = telebot.TeleBot(token)
+        self.bot = telebot.TeleBot(token, threaded=True)
         self.chat_id = chat_id
         self.tiny_db = tiny_db
 
@@ -114,4 +114,10 @@ class TelegramBot:
         return f"#: {counter}\n" + base_msg if counter is not None else base_msg
 
     def start_polling(self):
-        self.bot.polling()
+        while True:
+            try:
+                self.bot.polling(none_stop=True)
+            except Exception as e:
+                print(f"Error in bot polling: {e}")
+                time.sleep(5)
+                continue
