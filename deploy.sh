@@ -2,11 +2,17 @@ echo "[>] Starting Deployment..."
 
 compose_file=docker-compose.yml
 
-echo "[+] Removing old containers, volume, images and networks"
-docker system prune --force --filter --all
+echo "[+] Stopping and removing containers, networks, and volumes related to the compose file..."
+docker compose down --volumes --remove-orphans
 
-echo "[+] Stopping any running containers from docker compose..."
-docker compose down
+echo "[+] Removing dangling images (unused by any container)..."
+docker image prune --force
+
+echo "[+] Removing unused networks..."
+docker network prune --force
+
+echo "[+] Removing unused volumes..."
+docker volume prune --force
 
 echo "[+] Pulling the latest images..."
 docker compose pull
