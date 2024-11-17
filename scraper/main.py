@@ -75,7 +75,6 @@ class FlatsParser:
                     try:
                         flat.add_info(text, district)
                     except ValueError as v:
-                        logger.warning(f"Error parsing flat: {v}")
                         continue
 
                     self.db.insert(id, flat)
@@ -130,6 +129,7 @@ class FlatsParser:
                     final_districts.append(district)
                 except ValueError:
                     warning = f"District {district.name} not found"
+                    logger.warning(warning)
                     warnings.append(warning)
 
             return final_districts, warnings
