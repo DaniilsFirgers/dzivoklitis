@@ -11,7 +11,7 @@ from scraper.telegram import TelegramBot
 from scraper.database import FlatsTinyDb
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
-from apscheduler.triggers.cron import CronTrigger
+from scraper.logger import logger
 
 
 class FlatsParser:
@@ -34,7 +34,7 @@ class FlatsParser:
         return Config(telegram=telegram, general=general, districts=districts)
 
     def start(self, districts: List[District]) -> None:
-        self.telegram_bot.send_message("Start function triggered")
+        logger.info("Starting the scraper inside 'start' function")
         flats_found: Dict[str, List[Flat]] = {}
         for district in districts:
             pages_link = f"https://www.ss.lv/en/real-estate/flats/{self.config.general.city_name}/{district.name}/{self.config.general.look_back_argument}/{self.config.general.deal_type}/"
@@ -74,7 +74,7 @@ class FlatsParser:
 
                     try:
                         flat.add_info(text, district)
-                    except ValueError:
+                    except ValueError as v:
                         continue
 
                     self.db.insert(id, flat)
@@ -85,6 +85,7 @@ class FlatsParser:
 
         for district, flats in flats_found.items():
             msg = f"Found *{len(flats)}* flats in *{district}*"
+            logger.info(msg)
             self.telegram_bot.send_message(msg)
             # Iterate over each Student instance in the list of students for that subject
             for index, flat in enumerate(flats, start=1):
@@ -104,6 +105,7 @@ class FlatsParser:
             response = requests.get(link, timeout=10)
             response.raise_for_status()
         except requests.RequestException as e:
+
             raise ValueError(f"Error accessing the website: {e}")
 
         try:
@@ -126,7 +128,9 @@ class FlatsParser:
                     districts_found.index(district.name)
                     final_districts.append(district)
                 except ValueError:
-                    warnings.append(f"District {district.name} not found")
+                    warning = f"District {district.name} not found"
+                    logger.warning(warning)
+                    warnings.append(warning)
 
             return final_districts, warnings
 
@@ -141,11 +145,12 @@ if __name__ == "__main__":
     except Exception as e:
         scraper.db.close()
         err_msg = f"Error starting scraper: {e}"
+        logger.fatal(err_msg)
         scraper.telegram_bot.send_message(err_msg)
     else:
         scheduler = BackgroundScheduler()
         scheduler.configure(timezone=pytz.timezone("Europe/Riga"))
-        print("Starting the scraper")
+        logger.info("Starting the scraper")
         scraper.telegram_bot.send_message("Starting the scraper")
         scraper.start(districts)
         if warnings:
@@ -154,9 +159,14 @@ if __name__ == "__main__":
             scraper.telegram_bot.send_message(msg)
 
         scheduler.add_job(scraper.start, "cron",
-                          hour="9,12,15,18,21", minute=30, args=[districts])
+                          hour="9,12,15,18,21", minute=0, args=[districts])
 
         scheduler.start()
+
+        jobs = scheduler.get_jobs()
+        for job in jobs:
+            logger.info(
+                f"Job {job.id} scheduled to run at {job.next_run_time}")
 
         try:
             while True:
