@@ -130,7 +130,6 @@ class FlatsParser:
                     final_districts.append(district)
                 except ValueError:
                     warning = f"District {district.name} not found"
-                    logger.warning(warning)
                     warnings.append(warning)
 
             return final_districts, warnings
@@ -163,6 +162,11 @@ if __name__ == "__main__":
                           hour="9,12,15,18,21", minute=30, args=[districts])
 
         scheduler.start()
+
+        jobs = scheduler.get_jobs()
+        for job in jobs:
+            logger.info(
+                f"Job {job.id} scheduled to run at {job.next_run_time}")
 
         try:
             while True:
