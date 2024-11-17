@@ -161,6 +161,9 @@ if __name__ == "__main__":
         scheduler.add_job(scraper.start, "cron",
                           hour="9,12,15,18,21", minute=0, args=[districts])
 
+        scheduler.add_job(scraper.cleanup, "cron", day_of_week="mon",
+                          hour=9, minute=0, args=[districts])
+
         scheduler.start()
 
         jobs = scheduler.get_jobs()
