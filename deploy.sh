@@ -17,8 +17,8 @@ docker volume prune --force
 echo "[+] Pulling the latest images..."
 docker compose pull
 
-echo "[+] Starting new container using docker compose in detached mode..."
-docker compose up -d
+echo "[+] Starting new container using docker compose..."
+docker compose up 
 
 if [[ $? -eq 0 ]]; then
     echo "[✔] Deployment successful!"
