@@ -5,13 +5,15 @@ import requests
 import toml
 from pathlib import Path
 from bs4.element import Tag
-from scraper.config import Config, District, GeneralConfig,  TelegramConfig
+from scraper.config import Config, District, GeneralConfig, RabbitMq,  TelegramConfig
 from scraper.flat import Flat
 from scraper.telegram import TelegramBot
 from scraper.database import FlatsTinyDb
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 from scraper.logger import logger
+from scraper.rabbitmq.types import actions
+from rabbitmq.client import RabbitMqClient
 
 
 class FlatsParser:
@@ -21,6 +23,10 @@ class FlatsParser:
                               to_delete_interval=self.config.general.records_delete_interval)
         self.telegram_bot = TelegramBot(
             self.config.telegram.token, self.config.telegram.chat_id, self.db)
+        self.rabbitmq_client = RabbitMqClient(
+            self.config.rabbitmq, self.db)
+        logger.info("FlatsParser initialized", extra={
+                    "rabbit": self.rabbitmq_client})
 
     def load_config(self):
         config_path = Path("/app/config.toml")
@@ -29,9 +35,10 @@ class FlatsParser:
 
         telegram = TelegramConfig(**data["telegram"])
         general = GeneralConfig(**data["general"])
+        rabbitmq = RabbitMq(**data["rabbitmq"])
         districts = [District(**district) for district in data["districts"]]
 
-        return Config(telegram=telegram, general=general, districts=districts)
+        return Config(telegram=telegram, general=general, rabbitmq=rabbitmq, districts=districts)
 
     def start(self, districts: List[District]) -> None:
         logger.info("Starting the scraper inside 'start' function")
@@ -87,6 +94,8 @@ class FlatsParser:
             msg = f"Found *{len(flats)}* flats in *{district}*"
             logger.info(msg)
             self.telegram_bot.send_message(msg)
+            self.rabbitmq_client.publish(
+                action=actions["send_text_message"], message=msg)
             # Iterate over each Student instance in the list of students for that subject
             for index, flat in enumerate(flats, start=1):
                 msg = f"*{index}/{len(flats)}*"
@@ -148,6 +157,10 @@ if __name__ == "__main__":
         logger.fatal(err_msg)
         scraper.telegram_bot.send_message(err_msg)
     else:
+        # some actions in separate threads
+        scraper.rabbitmq_client.start_consumers()
+        scraper.telegram_bot.start_polling()
+        #
         scheduler = BackgroundScheduler()
         scheduler.configure(timezone=pytz.timezone("Europe/Riga"))
         logger.info("Starting the scraper")
