@@ -30,7 +30,15 @@ class District:
 
 
 @dataclass(frozen=True)
+class RabbitMq:
+    exchange: str
+    host: str
+    port: int
+
+
+@dataclass(frozen=True)
 class Config:
     general: GeneralConfig
     telegram: TelegramConfig
+    rabbitmq: RabbitMq
     districts:    List[District]
