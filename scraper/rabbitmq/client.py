@@ -31,9 +31,9 @@ class RabbitMqClient:
 
             # first declare queues
             self.producer_channel.queue_declare(
-                queue=action["queue_name"], passive=True, durable=False, exclusive=False, auto_delete=True)
+                queue=action["queue_name"], auto_delete=True)
             self.consumer_channel.queue_declare(
-                queue=action["queue_name"], passive=True, durable=False, exclusive=False, auto_delete=True)
+                queue=action["queue_name"], auto_delete=True)
             #  bind queues to exchange
             self.producer_channel.queue_bind(
                 exchange=self.exchange, queue=action["queue_name"], routing_key=action["routing_key"])
@@ -56,8 +56,9 @@ class RabbitMqClient:
 
     def start_consumers(self):
         for action in self._actions:
+            print(f"Starting consumer for {action['queue_name']}")
             self.consumer_channel.basic_consume(
-                queue=action["routing_key"],
+                queue=action["queue_name"],
                 on_message_callback=action["callback"],
                 auto_ack=True
             )
