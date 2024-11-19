@@ -18,7 +18,10 @@ class TelegramBot:
         self.bot.callback_query_handler(func=lambda call: call.data.startswith(
             "remove_from_favorites:"))(self.handle_remove_from_favorites)
         self.bot.message_handler(commands=["favorites"])(self.send_favorites)
-        Thread(target=self.start_polling, daemon=True).start()
+
+    def start_polling(self):
+        polling_thread = Thread(target=self._start_polling, daemon=True)
+        polling_thread.start()
 
     def handle_add_to_favorites(self, call):
         id = call.data.split(":")[1]
@@ -113,7 +116,7 @@ class TelegramBot:
 
         return f"#: {counter}\n" + base_msg if counter is not None else base_msg
 
-    def start_polling(self):
+    def _start_polling(self):
         while True:
             try:
                 self.bot.polling(none_stop=True)
