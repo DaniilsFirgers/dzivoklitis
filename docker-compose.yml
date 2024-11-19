@@ -3,7 +3,26 @@ version: '3.8'
 services:
   flats-pooler:
     image: daniilsfirgers/flats-parser:development
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     volumes:
       - ./config.toml:/app/config.toml 
       - ./flats.json:/app/flats.json  
     command: python3.10 -u /app/scraper/main.py
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+volumes:
+  rabbitmq_data:
