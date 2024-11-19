@@ -11,5 +11,3 @@ COPY scraper /app/scraper
 # Set the PYTHONPATH to /app so that Python can find the scraper module
 ENV PYTHONPATH="/app"
 ENV PYTHONUNBUFFERED=1
-
-CMD ["python3.10", "-u", "/app/scraper/main.py"]
