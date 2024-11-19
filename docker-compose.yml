@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   flats-pooler:
-    image: daniilsfirgers/flats-parser:development
+    build: 
+      context: .
+      dockerfile: Dockerfile
     depends_on:
       rabbitmq:
         condition: service_healthy
