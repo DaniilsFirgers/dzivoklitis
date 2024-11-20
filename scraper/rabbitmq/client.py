@@ -2,7 +2,7 @@ import pika
 from scraper.config import RabbitMq
 import json
 from scraper.rabbitmq.types import RabbitMqAction, actions
-from threading import Thread
+from threading import Thread, local
 from scraper.database import FlatsTinyDb
 
 
@@ -22,6 +22,8 @@ class RabbitMqClient:
             exchange=self.exchange, exchange_type='topic', durable=True)
         self.db = db
         self._actions = actions.values()
+        self._local = local()
+
         # declare queues for producer and consumer
         for action in self._actions:
             # passive - do not create queue if it does not exist
@@ -42,24 +44,59 @@ class RabbitMqClient:
             )
 
     def publish(self, action: RabbitMqAction, message: dict | str):
-        content_type = 'application/json' if isinstance(
-            message, dict) else 'text/plain'
+        if isinstance(message, dict):
+            message_body = json.dumps(message)
+            content_type = 'application/json'
+        else:
+            message_body = str(message)
+            content_type = 'text/plain'
         self.producer_channel.basic_publish(
             exchange=self.exchange,
             routing_key=action["routing_key"],
-            body=json.dumps(message),
+            body=message_body,
             properties=pika.BasicProperties(
                 content_type=content_type,
                 delivery_mode=2,  # make message persistent
             )
         )
 
+    def _callback(self, queue_name: str):
+        match queue_name:
+            case "add_flat":
+                def callback(ch, method, properties, body):
+                    print(f" [x] Received {body}")
+                return callback
+            case "delete_flat":
+                def callback(ch, method, properties, body):
+                    print(f" [x] Received {body}")
+                return callback
+            case "add_favorite_flat":
+                def callback(ch, method, properties, body):
+                    print(f" [x] Received {body}")
+                return callback
+            case "delete_favorite_flat":
+                def callback(ch, method, properties, body):
+                    print(f" [x] Received {body}")
+                return callback
+            case "delete_old_flats":
+                def callback(ch, method, properties, body):
+                    print(f" [x] Received {body}")
+                return callback
+            case "send_text_message":
+                def callback(ch, method, properties, body):
+                    print(f" [x] Received {body}")
+                return callback
+            case "send_flat_message":
+                def callback(ch, method, properties, body):
+                    print(f" [x] Received {body}")
+                return callback
+        return callback
+
     def start_consumers(self):
         for action in self._actions:
-            print(f"Starting consumer for {action['queue_name']}")
             self.consumer_channel.basic_consume(
                 queue=action["queue_name"],
-                on_message_callback=action["callback"],
+                on_message_callback=self._callback(action["queue_name"]),
                 auto_ack=True
             )
 
