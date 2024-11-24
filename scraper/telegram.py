@@ -1,17 +1,20 @@
 import time
 import telebot
 from telebot import types
-
+from scraper.rabbitmq.types import actions
 from scraper.flat import Flat
 from scraper.database import FlatsTinyDb
 from threading import Thread
 
+from scraper.rabbitmq.client import RabbitMqClient
+
 
 class TelegramBot:
-    def __init__(self, token, chat_id, tiny_db: FlatsTinyDb):
+    def __init__(self, token, chat_id, tiny_db: FlatsTinyDb, rabbit_mq_client: RabbitMqClient):
         self.bot = telebot.TeleBot(token, threaded=True)
         self.chat_id = chat_id
         self.tiny_db = tiny_db
+        self.rabbit_mq_client = rabbit_mq_client
 
         self.bot.callback_query_handler(func=lambda call: call.data.startswith(
             "add_to_favorites:"))(self.handle_add_to_favorites)
@@ -28,9 +31,7 @@ class TelegramBot:
         if self.tiny_db.exists(id, "favorites"):
             return self.bot.answer_callback_query(
                 call.id, "This flat is already in your favorites list ✅")
-
-        flat = self.tiny_db.get(id, "parsed")
-        self.tiny_db.insert(id, flat["flat"], "favorites")
+        self.rabbit_mq_client.publish(action=actions["add_favorite_flat"])
         self.bot.answer_callback_query(
             call.id, "Flat added to favorites ❤️"
         )
@@ -41,7 +42,8 @@ class TelegramBot:
             return self.bot.answer_callback_query(
                 call.id, "This flat is not in your favorites list 🤔")
 
-        self.tiny_db.favorites_db.remove(self.tiny_db.query.id == id)
+        self.rabbit_mq_client.publish(
+            action=actions["delete_favorite_flat"])
         self.bot.answer_callback_query(
             call.id, "Flat removed from favorites 🗑️"
         )
@@ -82,7 +84,7 @@ class TelegramBot:
             )
             time.sleep(0.5)
 
-    def send_flat_message(self, flat: Flat, counter: str):
+    def send_flat_message(self, flat: Flat, counter: str = None):
         msg_txt = self.flat_to_msg(flat, counter)
 
         markup = types.InlineKeyboardMarkup()
