@@ -2,7 +2,6 @@ from pathlib import Path
 import time
 from tinydb import TinyDB, Query
 from datetime import datetime, timedelta
-
 from scraper.flat import Flat
 
 
@@ -28,7 +27,7 @@ class FlatsTinyDb:
             raise ValueError(
                 "Invalid db_name. Expected 'parsed' or 'favorites'.")
 
-    def insert(self, key: str, flat: Flat, db_name: str = "parsed"):
+    def insert(self, key: str, flat: Flat | dict, db_name: str = "parsed"):
         """
         Insert flat info to the database together with its id and timestamp
         """
