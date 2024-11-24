@@ -18,13 +18,14 @@ from rabbitmq.client import RabbitMqClient
 
 class FlatsParser:
     def __init__(self):
+        # TODO:  move these to code starter and pass them as arguments
         self.config = self.load_config()
         self.db = FlatsTinyDb(parsed_db_name=self.config.general.db_name,
                               to_delete_interval=self.config.general.records_delete_interval)
         self.telegram_bot = TelegramBot(
             self.config.telegram.token, self.config.telegram.chat_id, self.db)
         self.rabbitmq_client = RabbitMqClient(
-            self.config.rabbitmq, self.db)
+            self.config.rabbitmq, self.db, self.telegram_bot)
         logger.info("FlatsParser initialized", extra={
                     "rabbit": self.rabbitmq_client})
 
@@ -74,9 +75,8 @@ class FlatsParser:
                     if self.db.exists(id, "parsed"):
                         continue
 
-                    chunk = streets[i:i + 7]
+                    chunk: list[Tag] = streets[i:i + 7]
                     text = [street.get_text() for street in chunk]
-
                     flat = Flat(id, link, district.name)
 
                     try:
@@ -84,7 +84,8 @@ class FlatsParser:
                     except ValueError as v:
                         continue
 
-                    self.db.insert(id, flat)
+                    self.rabbitmq_client.publish(
+                        action=actions["add_flat"], message=flat)
                     if district.name not in flats_found:
                         flats_found[district.name] = [flat]
                     else:
@@ -93,17 +94,18 @@ class FlatsParser:
         for district, flats in flats_found.items():
             msg = f"Found *{len(flats)}* flats in *{district}*"
             logger.info(msg)
-            self.telegram_bot.send_message(msg)
             self.rabbitmq_client.publish(
                 action=actions["send_text_message"], message=msg)
             # Iterate over each Student instance in the list of students for that subject
             for index, flat in enumerate(flats, start=1):
                 msg = f"*{index}/{len(flats)}*"
-                self.telegram_bot.send_flat_message(flat, msg)
+                self.rabbitmq_client.publish(
+                    action=actions["send_flat_message"], message=flat)
                 time.sleep(self.config.general.message_sleep)
 
     def cleanup(self):
-        self.db.delete_old_ads()
+        self.rabbitmq_client.publish(
+            action=actions["delete_old_flats"], message=None)
 
     def get_districts_list(self) -> tuple[List[int], List[str]]:
         districts_found = []
