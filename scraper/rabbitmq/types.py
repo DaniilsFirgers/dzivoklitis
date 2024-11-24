@@ -9,8 +9,8 @@ class RabbitMqAction(TypedDict):
 class RabbitMqActions(TypedDict):
     add_flat: RabbitMqAction
     delete_flat:  RabbitMqAction
-    add_flat_to_favorites:  RabbitMqAction
-    delete_flat_from_favorites:  RabbitMqAction
+    add_favorite_flat:  RabbitMqAction
+    delete_favorite_flat:  RabbitMqAction
     delete_old_flats:  RabbitMqAction
     send_text_message:  RabbitMqAction
     send_flat_message:  RabbitMqAction
@@ -18,7 +18,6 @@ class RabbitMqActions(TypedDict):
 
 actions: RabbitMqActions = {
     "add_flat": {"routing_key": "flat.add", "queue_name": "add_flat"},
-    "delete_flat": {"routing_key": "flat.delete", "queue_name": "delete_flat"},
     "add_favorite_flat": {"routing_key": "flat.favorite.add", "queue_name": "add_favorite_flat"},
     "delete_favorite_flat": {"routing_key": "flat.favorite.delete", "queue_name": "delete_favorite_flat"},
     "delete_old_flats": {"routing_key": "flat.old.delete", "queue_name": "delete_old_flats"},
