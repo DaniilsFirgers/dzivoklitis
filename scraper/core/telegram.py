@@ -3,7 +3,7 @@ import telebot
 from telebot import types
 from scraper.rabbitmq.types import actions
 from scraper.flat import Flat
-from scraper.database import FlatsTinyDb
+from scraper.core import FlatsTinyDb
 from threading import Thread
 
 from scraper.rabbitmq.client import RabbitMqClient
