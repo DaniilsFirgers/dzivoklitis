@@ -1,2 +1,8 @@
-# FlatScreener
-By using the BeautifulSoup library the script scrapes the main data on flats available for selling in different Riga districts and after applying certain filtering a CSV file is sent to a chosen email.
+# Flats screener
+
+TODO:
+
+- [] Add Postgres database
+- [] Add RabbitMq for message processing and routing
+- [] Add city24.lv scraper
+- [] Add flats linking (how did price change)
