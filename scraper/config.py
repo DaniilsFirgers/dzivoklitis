@@ -37,8 +37,18 @@ class RabbitMq:
 
 
 @dataclass(frozen=True)
+class Postgres:
+    host: str
+    port: int
+    user: str
+    password: str
+    database: str
+
+
+@dataclass(frozen=True)
 class Config:
     general: GeneralConfig
     telegram: TelegramConfig
     rabbitmq: RabbitMq
+    postgres: Postgres
     districts:    List[District]
