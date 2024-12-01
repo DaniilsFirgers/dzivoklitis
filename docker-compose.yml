@@ -2,11 +2,14 @@ version: '3.8'
 
 services:
   flats-pooler:
+    container_name: flats-pooler
     build: 
       context: .
       dockerfile: Dockerfile
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     volumes:
       - ./config.toml:/app/config.toml 
@@ -14,6 +17,7 @@ services:
     command: python3.10 -u /app/scraper/main.py
 
   rabbitmq:
+    container_name: rabbitmq
     image: rabbitmq:3-management-alpine
     ports:
       - "5673:5672"
@@ -25,6 +29,23 @@ services:
       interval: 30s
       timeout: 30s
       retries: 3
+  
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d flats"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: supersecret
+      POSTGRES_DB: flats
+    ports:
+      - "5433:5432"
+    
+
 
 volumes:
   rabbitmq_data:
