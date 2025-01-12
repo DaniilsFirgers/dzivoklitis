@@ -1,20 +1,14 @@
 import time
 import telebot
 from telebot import types
-from scraper.rabbitmq.types import actions
 from scraper.flat import Flat
-from scraper.core import FlatsTinyDb
 from threading import Thread
-
-from scraper.rabbitmq.client import RabbitMqClient
 
 
 class TelegramBot:
-    def __init__(self, token, chat_id, tiny_db: FlatsTinyDb, rabbit_mq_client: RabbitMqClient):
+    def __init__(self, token, chat_id):
         self.bot = telebot.TeleBot(token, threaded=True)
         self.chat_id = chat_id
-        self.tiny_db = tiny_db
-        self.rabbit_mq_client = rabbit_mq_client
 
         self.bot.callback_query_handler(func=lambda call: call.data.startswith(
             "add_to_favorites:"))(self.handle_add_to_favorites)
@@ -28,22 +22,20 @@ class TelegramBot:
 
     def handle_add_to_favorites(self, call):
         id = call.data.split(":")[1]
-        if self.tiny_db.exists(id, "favorites"):
-            return self.bot.answer_callback_query(
-                call.id, "This flat is already in your favorites list ✅")
-        self.rabbit_mq_client.publish(action=actions["add_favorite_flat"])
+        # TODO:  Check if the flat is already in favorites
+        # if self.tiny_db.exists(id, "favorites"):
+        #     return self.bot.answer_callback_query(
+        #         call.id, "This flat is already in your favorites list ✅")
         self.bot.answer_callback_query(
             call.id, "Flat added to favorites ❤️"
         )
 
     def handle_remove_from_favorites(self, call):
         id = call.data.split(":")[1]
-        if not self.tiny_db.exists(id, "favorites"):
-            return self.bot.answer_callback_query(
-                call.id, "This flat is not in your favorites list 🤔")
-
-        self.rabbit_mq_client.publish(
-            action=actions["delete_favorite_flat"])
+        # TODO:  Check if the flat does not exist in favorites
+        # if not self.tiny_db.exists(id, "favorites"):
+        #     return self.bot.answer_callback_query(
+        #         call.id, "This flat is not in your favorites list 🤔")
         self.bot.answer_callback_query(
             call.id, "Flat removed from favorites 🗑️"
         )
@@ -56,7 +48,8 @@ class TelegramBot:
         )
 
     def send_favorites(self, _):
-        favorites = self.tiny_db.favorites_db.all()
+        # TODO: get favorites from the database
+        # favorites = self.tiny_db.favorites_db.all()
         if not favorites:
             return self.bot.send_message(
                 chat_id=self.chat_id,
