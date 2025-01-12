@@ -1,4 +1,5 @@
 import psycopg2
+from scraper.flat import Flat
 from scraper.utils.logger import logger
 from scraper.utils.meta import SingletonMeta
 
@@ -29,7 +30,36 @@ class Postgres(metaclass=SingletonMeta):
             logger.info("Connected to the database.")
         except psycopg2.Error as e:
             logger.error(f"Error connecting to the database: {e}")
-            raise
+
+    def check_if_flat_exists(self, flat_id: str) -> bool:
+        """Check if a flat with a given id exists in the database."""
+        query = "SELECT * FROM flats WHERE flat_id = %s"
+        self.cursor.execute(query, (flat_id,))
+        return bool(self.cursor.fetchone())
+
+    def add_flat(self, flat: Flat):
+        """Add a flat to the database."""
+        try:
+            query = """INSERT INTO flats (flat_id, source, link, district, street, price_per_m2, rooms, area, floor, floors_total, series)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+            self.cursor.execute(query, (flat.id, flat.source.value, flat.link, flat.district, flat.street, flat.price_per_m2,
+                                flat.rooms, flat.m2, flat.floor, flat.last_floor, flat.series))
+            self.conn.commit()
+            logger.info(f"Added a flat with id {flat.id} to the database.")
+        except psycopg2.Error as e:
+            self.conn.rollback()
+            logger.error(f"Error adding a flat to the database: {e}")
+
+    def add_to_favourites(self, flat_id: str):
+        """Add a flat to the favourites table."""
+        try:
+            query = "INSERT INTO favourite_flats (flat_id) VALUES (%s)"
+            self.cursor.execute(query, (flat_id,))
+            self.conn.commit()
+            logger.info(f"Added a flat with id {flat_id} to favourites.")
+        except psycopg2.Error as e:
+            self.conn.rollback()
+            logger.error(f"Error adding a flat to favourites: {e}")
 
     def close(self):
         """Close the cursor and connection."""
@@ -41,4 +71,3 @@ class Postgres(metaclass=SingletonMeta):
             logger.info("Closed the connection.")
         except psycopg2.Error as e:
             logger.error(f"Error closing the connection: {e}")
-            raise
