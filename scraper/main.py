@@ -6,6 +6,7 @@ from scraper.core.telegram import TelegramBot
 from scraper.core.postgres import Postgres
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
+from scraper.flat import Source
 from scraper.utils.logger import logger
 from scraper.utils.meta import SingletonMeta
 from scraper.parsers.ss import SSParser
@@ -35,10 +36,11 @@ class FlatsParser(metaclass=SingletonMeta):
     def run(self):
         self.telegram_bot.start_polling()
         self.scheduler.configure(timezone=pytz.timezone("Europe/Riga"))
+        self.postgres.connect()
 
         self.telegram_bot.send_message("Bot started")
 
-        ss = SSParser("SS", self.scheduler, self.telegram_bot,
+        ss = SSParser(Source.SS, self.scheduler, self.telegram_bot, self.postgres,
                       self.config.districts, self.config.general)
         ss.run()
 
