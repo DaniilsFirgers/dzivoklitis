@@ -3,6 +3,7 @@
 -- use a composite type for address
 CREATE TABLE IF NOT EXISTS flats(
     flat_id VARCHAR(255) PRIMARY KEY, -- VARCHAR is a string with a maximum length of 255 characters
+    source VARCHAR(30) NOT NULL, -- where the flat was found
     link TEXT NOT NULL, -- TEXT is a type for long strings
     district VARCHAR(100) NOT NULL, -- VARCHAR is a shorthand for VARCHAR(255), which is a string with a maximum length of 255 characters
     street VARCHAR(150) NOT NULL,
