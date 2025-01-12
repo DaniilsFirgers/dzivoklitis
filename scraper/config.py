@@ -30,14 +30,7 @@ class District:
 
 
 @dataclass(frozen=True)
-class RabbitMq:
-    exchange: str
-    host: str
-    port: int
-
-
-@dataclass(frozen=True)
-class Postgres:
+class PostgresConfig:
     host: str
     port: int
     user: str
@@ -49,6 +42,5 @@ class Postgres:
 class Config:
     general: GeneralConfig
     telegram: TelegramConfig
-    rabbitmq: RabbitMq
-    postgres: Postgres
+    postgres: PostgresConfig
     districts:    List[District]
