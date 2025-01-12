@@ -1,13 +1,20 @@
 import re
-
 from scraper.config import District
+from enum import Enum
+
+
+class Source(Enum):
+    SS = "ss"
+    MM = "mm"
+    CITY_24 = "city24"
 
 
 class Flat:
-    def __init__(self, id: str, link: str, district: str, **kwargs):
+    def __init__(self, id: str, link: str, district: str, source: Source, **kwargs):
         self.id = id
         self.link = link
         self.district = district
+        self.source = source
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -15,6 +22,7 @@ class Flat:
     def to_dict(self):
         return {
             "id": self.id,
+            "source": self.source.value,
             "link": self.link,
             "district": self.district,
             "price_per_m2": self.price_per_m2,
