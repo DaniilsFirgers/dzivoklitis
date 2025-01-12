@@ -3,8 +3,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 
 class BaseParser:
-    def __init__(self, name: str, scheduler: BackgroundScheduler, deal_type: str, sleep_time: int = 3):
-        self.name = name
+    def __init__(self, source: str, scheduler: BackgroundScheduler, deal_type: str, sleep_time: int = 3):
+        self.source = source
         self.scheduler = scheduler
         self.deal_type = deal_type
         self.sleep_time = sleep_time
