@@ -3,6 +3,7 @@ from typing import Dict, List
 from bs4 import BeautifulSoup, ResultSet, Tag
 import requests
 from scraper.config import District, GeneralConfig
+from scraper.core.postgres import Postgres
 from scraper.core.telegram import TelegramBot
 from scraper.flat import Flat
 from scraper.parsers.base import BaseParser
@@ -11,15 +12,16 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 
 class SSParser(BaseParser):
-    def __init__(self, name: str, scheduler: BackgroundScheduler, telegram_bot: TelegramBot,
+    def __init__(self, source: str, scheduler: BackgroundScheduler, telegram_bot: TelegramBot, postgres: Postgres,
                  districts: List[District], general_config: GeneralConfig
                  ):
-        super().__init__(name, scheduler,
+        super().__init__(source, scheduler,
                          general_config.deal_type, general_config.message_sleep)
         self.city_name = general_config.city_name
         self.districts = districts
         self.look_back_arg = general_config.look_back_argument
         self.telegram_bot = telegram_bot
+        self.postgres = postgres
 
     def get_districts_list(self) -> List[int]:
         districts_found = []
@@ -91,17 +93,18 @@ class SSParser(BaseParser):
                     link = f"https://www.ss.lv/{info}"
                     id = description.get("id")
 
-                    # TODO: add a check for already parsed flats
+                    if self.postgres.check_if_flat_exists(id):
+                        continue
                     chunk: list[Tag] = streets[i:i + 7]
                     text = [street.get_text() for street in chunk]
-                    flat = Flat(id, link, district.name)
+                    flat = Flat(id, link, district.name, self.source)
 
                     try:
                         flat.add_info(text, district)
-                    except ValueError as v:
+                    except ValueError:
                         continue
 
-                    # TODO: add to the database
+                    self.postgres.add_flat(flat)
 
                     if district.name not in flats_found:
                         flats_found[district.name] = [flat]
@@ -112,10 +115,8 @@ class SSParser(BaseParser):
             msg = f"Found *{len(flats)}* flats in *{district}*"
             logger.info(msg)
             self.telegram_bot.send_message(msg)
-            # Iterate over each Student instance in the list of students for that subject
+
             for index, flat in enumerate(flats, start=1):
                 msg = f"*{index}/{len(flats)}*"
                 self.telegram_bot.send_flat_message(flat, msg)
                 time.sleep(self.sleep_time)
-
-        self.telegram_bot.send_message(f"Finished scraping {self.name}")
