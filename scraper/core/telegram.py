@@ -1,14 +1,19 @@
 import time
 import telebot
 from telebot import types
+from telebot import types
+from scraper.core.postgres import Postgres, Table
 from scraper.flat import Flat
 from threading import Thread
 
+from scraper.utils.logger import logger
+
 
 class TelegramBot:
-    def __init__(self, token, chat_id):
+    def __init__(self, token: str, chat_id: str, postgres: Postgres):
         self.bot = telebot.TeleBot(token, threaded=True)
         self.chat_id = chat_id
+        self.postgres = postgres
 
         self.bot.callback_query_handler(func=lambda call: call.data.startswith(
             "add_to_favorites:"))(self.handle_add_to_favorites)
@@ -20,25 +25,37 @@ class TelegramBot:
         polling_thread = Thread(target=self._start_polling, daemon=True)
         polling_thread.start()
 
-    def handle_add_to_favorites(self, call):
-        id = call.data.split(":")[1]
-        # TODO:  Check if the flat is already in favorites
-        # if self.tiny_db.exists(id, "favorites"):
-        #     return self.bot.answer_callback_query(
-        #         call.id, "This flat is already in your favorites list ✅")
-        self.bot.answer_callback_query(
-            call.id, "Flat added to favorites ❤️"
-        )
+    def handle_add_to_favorites(self, call: types.CallbackQuery):
+        try:
+            id = call.data.split(":")[1]
+            if self.postgres.check_if_exists(id, Table.FAVOURITE_FLATS):
+                return self.bot.answer_callback_query(
+                    call.id, "Flat already in favorites ❤️"
+                )
+            self.postgres.add_to_favourites(id)
+            logger.info(f"Added a flat with id {id} to favourites.")
 
-    def handle_remove_from_favorites(self, call):
-        id = call.data.split(":")[1]
-        # TODO:  Check if the flat does not exist in favorites
-        # if not self.tiny_db.exists(id, "favorites"):
-        #     return self.bot.answer_callback_query(
-        #         call.id, "This flat is not in your favorites list 🤔")
-        self.bot.answer_callback_query(
-            call.id, "Flat removed from favorites 🗑️"
-        )
+            self.bot.answer_callback_query(
+                call.id, "Flat added to favorites ❤️"
+            )
+        except Exception as e:
+            logger.error(f"Error adding a flat to favorites: {e}")
+            self.bot.answer_callback_query(
+                call.id, "Error adding a flat to favorites 😢"
+            )
+
+    def handle_remove_from_favorites(self, call: types.CallbackQuery):
+        try:
+            id = call.data.split(":")[1]
+            self.postgres.delete(id, Table.FAVOURITE_FLATS)
+            self.bot.answer_callback_query(
+                call.id, "Flat removed from favorites 🗑️"
+            )
+        except Exception as e:
+            logger.error(f"Error removing a flat from favorites: {e}")
+            self.bot.answer_callback_query(
+                call.id, "Error removing a flat from favorites 😢"
+            )
 
     def send_message(self, message: str):
         self.bot.send_message(
@@ -48,34 +65,35 @@ class TelegramBot:
         )
 
     def send_favorites(self, _):
-        # TODO: get favorites from the database
-        # favorites = self.tiny_db.favorites_db.all()
+        favorites = self.postgres.get_favourites()
         if not favorites:
             return self.bot.send_message(
                 chat_id=self.chat_id,
                 text="You don't have any favorites yet 😢"
             )
 
-        for counter, favorite in enumerate(favorites, start=1):
-            flat_obj = Flat(**favorite["flat"])
-            flat_msg = self.flat_to_msg(flat_obj, counter)
+        print(favorites)
 
-            markup = types.InlineKeyboardMarkup()
-            markup.add(
-                types.InlineKeyboardButton(
-                    "🔍 View Link", url=flat_obj.link),
-            )
-            markup.add(
-                types.InlineKeyboardButton(
-                    "❌ Remove", callback_data=f"remove_from_favorites:{flat_obj.id}"),
-            )
-            self.bot.send_message(
-                chat_id=self.chat_id,
-                text=flat_msg,
-                parse_mode="Markdown",
-                reply_markup=markup
-            )
-            time.sleep(0.5)
+        # for counter, favorite in enumerate(favorites, start=1):
+        #     flat_obj = Flat(**favorite["flat"])
+        #     flat_msg = self.flat_to_msg(flat_obj, counter)
+
+        #     markup = types.InlineKeyboardMarkup()
+        #     markup.add(
+        #         types.InlineKeyboardButton(
+        #             "🔍 View Link", url=flat_obj.link),
+        #     )
+        #     markup.add(
+        #         types.InlineKeyboardButton(
+        #             "❌ Remove", callback_data=f"remove_from_favorites:{flat_obj.id}"),
+        #     )
+        #     self.bot.send_message(
+        #         chat_id=self.chat_id,
+        #         text=flat_msg,
+        #         parse_mode="Markdown",
+        #         reply_markup=markup
+        #     )
+        #     time.sleep(0.5)
 
     def send_flat_message(self, flat: Flat, counter: str = None):
         msg_txt = self.flat_to_msg(flat, counter)
