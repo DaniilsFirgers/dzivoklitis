@@ -1,7 +1,15 @@
+from enum import Enum
+from typing import List
 import psycopg2
 from scraper.flat import Flat
 from scraper.utils.logger import logger
 from scraper.utils.meta import SingletonMeta
+
+
+class Table(Enum):
+    FLATS = "flats"
+    FLAT_UPDATES = "flat_updates"
+    FAVOURITE_FLATS = "favourite_flats"
 
 
 class Postgres(metaclass=SingletonMeta):
@@ -31,13 +39,13 @@ class Postgres(metaclass=SingletonMeta):
         except psycopg2.Error as e:
             logger.error(f"Error connecting to the database: {e}")
 
-    def check_if_flat_exists(self, flat_id: str) -> bool:
+    def check_if_exists(self, flat_id: str, table: Table) -> bool:
         """Check if a flat with a given id exists in the database."""
-        query = "SELECT * FROM flats WHERE flat_id = %s"
+        query = f"SELECT * FROM {table.value} WHERE flat_id = %s"
         self.cursor.execute(query, (flat_id,))
         return bool(self.cursor.fetchone())
 
-    def add_flat(self, flat: Flat):
+    def add(self, flat: Flat):
         """Add a flat to the database."""
         try:
             query = """INSERT INTO flats (flat_id, source, link, district, street, price_per_m2, rooms, area, floor, floors_total, series)
@@ -45,10 +53,9 @@ class Postgres(metaclass=SingletonMeta):
             self.cursor.execute(query, (flat.id, flat.source.value, flat.link, flat.district, flat.street, flat.price_per_m2,
                                 flat.rooms, flat.m2, flat.floor, flat.last_floor, flat.series))
             self.conn.commit()
-            logger.info(f"Added a flat with id {flat.id} to the database.")
         except psycopg2.Error as e:
             self.conn.rollback()
-            logger.error(f"Error adding a flat to the database: {e}")
+            raise ValueError(f"Error adding a flat to the database: {e}")
 
     def add_to_favourites(self, flat_id: str):
         """Add a flat to the favourites table."""
@@ -56,10 +63,29 @@ class Postgres(metaclass=SingletonMeta):
             query = "INSERT INTO favourite_flats (flat_id) VALUES (%s)"
             self.cursor.execute(query, (flat_id,))
             self.conn.commit()
-            logger.info(f"Added a flat with id {flat_id} to favourites.")
         except psycopg2.Error as e:
             self.conn.rollback()
-            logger.error(f"Error adding a flat to favourites: {e}")
+            raise ValueError(f"Error adding a flat to favourites: {e}")
+
+    def delete(self, flat_id: str, table: Table):
+        """Delete a flat from the favourites table."""
+        try:
+            query = f"DELETE FROM {table.value} WHERE flat_id = %s"
+            self.cursor.execute(query, (flat_id,))
+            self.conn.commit()
+            logger.info(f"Deleted a flat with id {flat_id} from the database.")
+        except psycopg2.Error as e:
+            self.conn.rollback()
+            raise ValueError(f"Error deleting a flat from favourites: {e}")
+
+    def get_favourites(self) -> List[Flat]:
+        """Get all flats from the favourites table."""
+        try:
+            query = "SELECT * FROM favourite_flats"
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except psycopg2.Error as e:
+            logger.error(f"Error getting favourites: {e}")
 
     def close(self):
         """Close the cursor and connection."""
