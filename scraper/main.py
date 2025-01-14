@@ -18,7 +18,7 @@ class FlatsParser(metaclass=SingletonMeta):
         self.postgres = Postgres(
             self.config.postgres.host, self.config.postgres.port, self.config.postgres.user, self.config.postgres.password, self.config.postgres.database)
         self.telegram_bot = TelegramBot(
-            self.config.telegram.token, self.config.telegram.chat_id)
+            self.config.telegram.token, self.config.telegram.chat_id, self.postgres)
         self.scheduler = BackgroundScheduler()
 
     def load_config(self):
