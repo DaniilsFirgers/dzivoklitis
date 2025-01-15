@@ -5,7 +5,7 @@ import requests
 from scraper.config import District, GeneralConfig
 from scraper.core.postgres import Postgres, Table
 from scraper.core.telegram import TelegramBot
-from scraper.flat import Flat
+from scraper.flat import Flat, SS_Flat
 from scraper.parsers.base import BaseParser
 from scraper.utils.logger import logger
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -95,12 +95,15 @@ class SSParser(BaseParser):
 
                     if self.postgres.check_if_exists(id, Table.FLATS):
                         continue
+
                     chunk: list[Tag] = streets[i:i + 7]
-                    text = [street.get_text() for street in chunk]
-                    flat = Flat(id, link, district.name, self.source)
+                    raw_info = [street.get_text() for street in chunk]
+
+                    flat = SS_Flat(id, link, district, raw_info)
+                    flat.create()
 
                     try:
-                        flat.add_info(text, district)
+                        flat.validate()
                     except ValueError:
                         continue
 
