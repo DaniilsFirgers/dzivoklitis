@@ -50,7 +50,7 @@ class Postgres(metaclass=SingletonMeta):
         try:
             query = """INSERT INTO flats (flat_id, source, link, district, street, price_per_m2, rooms, area, floor, floors_total, series)
                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-            self.cursor.execute(query, (flat.id, flat.source.value, flat.link, flat.district, flat.street, flat.price_per_m2,
+            self.cursor.execute(query, (flat.id, flat.source, flat.link, flat.district, flat.street, flat.price_per_m2,
                                 flat.rooms, flat.m2, flat.floor, flat.last_floor, flat.series))
             self.conn.commit()
         except psycopg2.Error as e:
@@ -78,10 +78,10 @@ class Postgres(metaclass=SingletonMeta):
             self.conn.rollback()
             raise ValueError(f"Error deleting a flat from favourites: {e}")
 
-    def get_favourites(self) -> List[Flat]:
+    def get_favourites(self) -> List[tuple]:
         """Get all flats from the favourites table."""
         try:
-            query = "SELECT * FROM favourite_flats"
+            query = f"SELECT f.* FROM {Table.FAVOURITE_FLATS.value} ff INNER JOIN {Table.FLATS.value} f ON ff.flat_id = f.flat_id"
             self.cursor.execute(query)
             return self.cursor.fetchall()
         except psycopg2.Error as e:
