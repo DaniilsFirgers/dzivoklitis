@@ -2,7 +2,7 @@ import time
 import telebot
 from telebot import types
 from telebot import types
-from scraper.core.postgres import Postgres, Table
+from scraper.core.postgres import Postgres, Type
 from scraper.flat import Flat
 from threading import Thread
 
@@ -28,7 +28,7 @@ class TelegramBot:
     def handle_add_to_favorites(self, call: types.CallbackQuery):
         try:
             id = call.data.split(":")[1]
-            if self.postgres.check_if_exists(id, Table.FAVOURITE_FLATS):
+            if self.postgres.check_if_exists(id, Type.FAVOURITE_FLATS):
                 return self.bot.answer_callback_query(
                     call.id, "Flat already in favorites ❤️"
                 )
@@ -39,7 +39,7 @@ class TelegramBot:
                 call.id, "Flat added to favorites ❤️"
             )
         except Exception as e:
-            logger.error(f"Error adding a flat to favorites: {e}")
+            logger.error(e)
             self.bot.answer_callback_query(
                 call.id, "Error adding a flat to favorites 😢"
             )
@@ -47,7 +47,7 @@ class TelegramBot:
     def handle_remove_from_favorites(self, call: types.CallbackQuery):
         try:
             id = call.data.split(":")[1]
-            self.postgres.delete(id, Table.FAVOURITE_FLATS)
+            self.postgres.delete(id, Type.FAVOURITE_FLATS)
             self.bot.answer_callback_query(
                 call.id, "Flat removed from favorites 🗑️"
             )
@@ -72,30 +72,12 @@ class TelegramBot:
                 text="You don't have any favorites yet 😢"
             )
 
-        print(favorites)
+        for counter, favorite in enumerate(favorites, start=1):
+            flat = Flat.from_sql_row(*favorite)
+            self.send_flat_message(flat, Type.FAVOURITE_FLATS, counter)
+            time.sleep(0.5)
 
-        # for counter, favorite in enumerate(favorites, start=1):
-        #     flat_obj = Flat(**favorite["flat"])
-        #     flat_msg = self.flat_to_msg(flat_obj, counter)
-
-        #     markup = types.InlineKeyboardMarkup()
-        #     markup.add(
-        #         types.InlineKeyboardButton(
-        #             "🔍 View Link", url=flat_obj.link),
-        #     )
-        #     markup.add(
-        #         types.InlineKeyboardButton(
-        #             "❌ Remove", callback_data=f"remove_from_favorites:{flat_obj.id}"),
-        #     )
-        #     self.bot.send_message(
-        #         chat_id=self.chat_id,
-        #         text=flat_msg,
-        #         parse_mode="Markdown",
-        #         reply_markup=markup
-        #     )
-        #     time.sleep(0.5)
-
-    def send_flat_message(self, flat: Flat, counter: str = None):
+    def send_flat_message(self, flat: Flat, type: Type, counter: str = None):
         msg_txt = self.flat_to_msg(flat, counter)
 
         markup = types.InlineKeyboardMarkup()
@@ -103,10 +85,16 @@ class TelegramBot:
             types.InlineKeyboardButton(
                 "🔍 View Link", url=flat.link),
         )
-        markup.add(
-            types.InlineKeyboardButton(
-                "❤️ Add to Favorites", callback_data=f"add_to_favorites:{flat.id}"),
-        )
+        if type == Type.FAVOURITE_FLATS:
+            markup.add(
+                types.InlineKeyboardButton(
+                    "🗑️ Remove from Favorites", callback_data=f"remove_from_favorites:{flat.id}"),
+            )
+        else:
+            markup.add(
+                types.InlineKeyboardButton(
+                    "❤️ Add to Favorites", callback_data=f"add_to_favorites:{flat.id}"),
+            )
 
         self.bot.send_message(
             chat_id=self.chat_id,
@@ -121,7 +109,7 @@ class TelegramBot:
             f"*Street*: {flat.street}\n"
             f"*Series*: {flat.series}\n"
             f"*Rooms*: {flat.rooms}\n"
-            f"*M2*: {flat.m2}\n"
+            f"*M2*: {flat.area}\n"
             f"*Floor*: {flat.floor}/{flat.last_floor}\n"
             f"*Price per m2*: {flat.price_per_m2}\n"
             f"*Full price*: {flat.full_price}\n"
