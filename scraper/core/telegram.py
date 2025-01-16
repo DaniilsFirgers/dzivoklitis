@@ -88,7 +88,7 @@ class TelegramBot:
         if type == Type.FAVOURITE_FLATS:
             markup.add(
                 types.InlineKeyboardButton(
-                    "🗑️ Remove from Favorites", callback_data=f"remove_from_favorites:{flat.id}"),
+                    "🗑️ Delete", callback_data=f"remove_from_favorites:{flat.id}"),
             )
         else:
             markup.add(
