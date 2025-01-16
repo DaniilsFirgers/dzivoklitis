@@ -3,7 +3,7 @@ from typing import Dict, List
 from bs4 import BeautifulSoup, ResultSet, Tag
 import requests
 from scraper.config import District, GeneralConfig
-from scraper.core.postgres import Postgres, Table
+from scraper.core.postgres import Postgres, Type
 from scraper.core.telegram import TelegramBot
 from scraper.flat import Flat, SS_Flat
 from scraper.parsers.base import BaseParser
@@ -93,7 +93,7 @@ class SSParser(BaseParser):
                     link = f"https://www.ss.lv/{info}"
                     id = description.get("id")
 
-                    if self.postgres.check_if_exists(id, Table.FLATS):
+                    if self.postgres.check_if_exists(id, Type.FLATS):
                         continue
 
                     chunk: list[Tag] = streets[i:i + 7]
@@ -111,8 +111,7 @@ class SSParser(BaseParser):
                         self.postgres.add(flat)
                         logger.info(f"Added flat {flat.id} to the database")
                     except Exception as e:
-                        logger.error(
-                            f"Error adding a flat to the database: {e}")
+                        logger.error(e)
                         continue
 
                     if district.name not in flats_found:
@@ -127,5 +126,5 @@ class SSParser(BaseParser):
 
             for index, flat in enumerate(flats, start=1):
                 msg = f"*{index}/{len(flats)}*"
-                self.telegram_bot.send_flat_message(flat, msg)
+                self.telegram_bot.send_flat_message(flat, Type.FLATS, msg)
                 time.sleep(self.sleep_time)
