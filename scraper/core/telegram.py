@@ -28,7 +28,7 @@ class TelegramBot:
     def handle_add_to_favorites(self, call: types.CallbackQuery):
         try:
             id = call.data.split(":")[1]
-            if self.postgres.check_if_exists(id, Type.FAVOURITE_FLATS):
+            if self.postgres.exists_with_id(id, Type.FAVOURITE_FLATS):
                 return self.bot.answer_callback_query(
                     call.id, "Flat already in favorites ❤️"
                 )
@@ -71,7 +71,6 @@ class TelegramBot:
                 chat_id=self.chat_id,
                 text="You don't have any favorites yet 😢"
             )
-
         for counter, favorite in enumerate(favorites, start=1):
             flat = Flat.from_sql_row(*favorite)
             self.send_flat_message(flat, Type.FAVOURITE_FLATS, counter)
@@ -83,7 +82,7 @@ class TelegramBot:
         markup = types.InlineKeyboardMarkup()
         markup.add(
             types.InlineKeyboardButton(
-                "🔍 View Link", url=flat.link),
+                "🔍 View URL", url=flat.url),
         )
         if type == Type.FAVOURITE_FLATS:
             markup.add(
@@ -110,7 +109,7 @@ class TelegramBot:
             f"*Series*: {flat.series}\n"
             f"*Rooms*: {flat.rooms}\n"
             f"*M2*: {flat.area}\n"
-            f"*Floor*: {flat.floor}/{flat.last_floor}\n"
+            f"*Floor*: {flat.floor}/{flat.floors_total}\n"
             f"*Price per m2*: {flat.price_per_m2}\n"
             f"*Full price*: {flat.full_price}\n"
         )
