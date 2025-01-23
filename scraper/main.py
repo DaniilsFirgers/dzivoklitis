@@ -1,12 +1,11 @@
 import time
 import toml
 from pathlib import Path
-from scraper.config import Config, District, GeneralConfig, TelegramConfig, PostgresConfig
+from scraper.config import Config, District, ParserConfigs, SsParserConfig, TelegramConfig, PostgresConfig
 from scraper.core.telegram import TelegramBot
 from scraper.core.postgres import Postgres
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
-from scraper.flat import Source
 from scraper.utils.logger import logger
 from scraper.utils.meta import SingletonMeta
 from scraper.parsers.ss import SSParser
@@ -27,11 +26,15 @@ class FlatsParser(metaclass=SingletonMeta):
             data = toml.load(file)
 
         telegram = TelegramConfig(**data["telegram"])
-        general = GeneralConfig(**data["general"])
+
+        parsers_data = data["parsers"]
+        parsers = ParserConfigs(
+            ss=SsParserConfig(**parsers_data["ss"])
+        )
         postgres = PostgresConfig(**data["postgres"])
         districts = [District(**district) for district in data["districts"]]
 
-        return Config(telegram=telegram, general=general, districts=districts, postgres=postgres)
+        return Config(telegram=telegram, parsers=parsers, districts=districts, postgres=postgres)
 
     def run(self):
         self.telegram_bot.start_polling()
@@ -40,8 +43,8 @@ class FlatsParser(metaclass=SingletonMeta):
 
         self.telegram_bot.send_message("Bot started")
 
-        ss = SSParser(Source.SS, self.scheduler, self.telegram_bot, self.postgres,
-                      self.config.districts, self.config.general)
+        ss = SSParser(self.scheduler, self.telegram_bot, self.postgres,
+                      self.config.districts, self.config.parsers.ss, self.config.telegram.sleep_time)
         ss.run()
 
         self.scheduler.start()
