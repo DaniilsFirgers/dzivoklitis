@@ -1,3 +1,4 @@
+import re
 import time
 from typing import Dict, List
 from bs4 import BeautifulSoup, ResultSet, Tag
@@ -171,9 +172,11 @@ class SSParser(BaseParser):
 
     def get_coordinates(self, city: str, street: str) -> Coordinates | None:
         geolocator = Nominatim(user_agent="flats_scraper")
-        # TODO: remove .strip() when the bug with geopy is fixed
+        # Remove sequences of letters followed by a dot (e.g., "J.", "pr.")
+        # It helps to get better results
+        cleaned_street = re.sub(r'\b[A-Za-z]{1,7}\.\s*', '', street)
         location = geolocator.geocode({
-            "street": street,
+            "street": cleaned_street,
             "city": city,
             "country": "Latvia"
         })
