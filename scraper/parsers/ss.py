@@ -175,14 +175,18 @@ class SSParser(BaseParser):
         # Remove sequences of letters followed by a dot (e.g., "J.", "pr.")
         # It helps to get better results
         cleaned_street = re.sub(r'\b[A-Za-z]{1,7}\.\s*', '', street)
-        location = geolocator.geocode({
-            "street": cleaned_street,
-            "city": city,
-            "country": "Latvia"
-        })
+        try:
+            location = geolocator.geocode({
+                "street": cleaned_street,
+                "city": city,
+                "country": "Latvia"
+            })
 
-        if location is None:
-            print(f"Could not get coordinates for {street}")
+            if location is None:
+                print(f"Could not get coordinates for {street}")
+                return None
+
+            return Coordinates(location.latitude, location.longitude)
+        except Exception as e:
+            logger.error(e)
             return None
-
-        return Coordinates(location.latitude, location.longitude)
