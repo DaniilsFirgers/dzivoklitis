@@ -26,5 +26,5 @@ INSERT INTO flats (
     ''::bytea -- Binary data for images (empty in this case)
 );
 
-INSERT INTO flat_price_updates (flat_id, price_per_m2) 
+INSERT INTO flats_price (flat_id, price_per_m2) 
 VALUES ('07de7d82117765eac419e02a8d4d9c7b', 900);

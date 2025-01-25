@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS flats(
 );
 
 -- create a table to store price updates
-CREATE TABLE IF NOT EXISTS flat_price_updates(
+CREATE TABLE IF NOT EXISTS flats_price(
     id SERIAL PRIMARY KEY,
     flat_id VARCHAR(255) NOT NULL,
     FOREIGN KEY(flat_id) REFERENCES flats(flat_id) ON DELETE CASCADE,
@@ -39,16 +39,16 @@ CREATE TABLE IF NOT EXISTS favourite_flats(
 
 -- create indexes
 CREATE INDEX idx_district ON flats(district);
-CREATE INDEX idx_price_per_m2 ON flat_price_updates(price_per_m2);
-CREATE INDEX idx_updated_at ON flat_price_updates(updated_at);
-CREATE INDEX idx_flat_id ON flat_price_updates(flat_id);
+CREATE INDEX idx_price_per_m2 ON flats_price(price_per_m2);
+CREATE INDEX idx_updated_at ON flats_price(updated_at);
+CREATE INDEX idx_flat_id ON flats_price(flat_id);
 CREATE INDEX idx_area ON flats(area);
 create INDEX idx_flats_location ON flats USING GIST (location);
 
 -- create composite index
 CREATE INDEX idx_district_series ON flats(district, series);
 -- create constraints
-ALTER TABLE flat_price_updates ADD CONSTRAINT chk_price_per_m2 CHECK (price_per_m2 > 0);
+ALTER TABLE flats_price ADD CONSTRAINT chk_price_per_m2 CHECK (price_per_m2 > 0);
 ALTER TABLE flats ADD CONSTRAINT chk_area CHECK (area > 0);
 ALTER TABLE flats ADD CONSTRAINT chk_floor CHECK (floor <= floors_total);
 ALTER TABLE flats ADD CONSTRAINT chk_rooms CHECK (rooms > 0);
