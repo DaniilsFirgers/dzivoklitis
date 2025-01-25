@@ -24,8 +24,6 @@ class ParserConfigs:
 
 @dataclass(frozen=True)
 class TelegramConfig:
-    token: str
-    chat_id: str
     sleep_time: int
 
 
@@ -41,17 +39,7 @@ class District:
 
 
 @dataclass(frozen=True)
-class PostgresConfig:
-    host: str
-    port: int
-    user: str
-    password: str
-    database: str
-
-
-@dataclass(frozen=True)
 class Config:
     parsers: ParserConfigs
     telegram: TelegramConfig
-    postgres: PostgresConfig
     districts: List[District]
