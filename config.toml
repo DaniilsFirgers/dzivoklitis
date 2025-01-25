@@ -8,7 +8,7 @@ name = "ss"
 timeframe = "today-2"
 
 [telegram]
-sleep_time = 4
+sleep_time = 3
 
 [[districts]]
 max_price_per_m2 = 2400
