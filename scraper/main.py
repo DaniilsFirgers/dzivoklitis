@@ -15,7 +15,8 @@ class FlatsParser(metaclass=SingletonMeta):
     def __init__(self):
         self.config = self.load_config()
         self.postgres = Postgres()
-        self.telegram_bot = TelegramBot(self.postgres)
+        self.telegram_bot = TelegramBot(
+            self.postgres, self.config.telegram.sleep_time)
         self.scheduler = BackgroundScheduler()
 
     def load_config(self):
@@ -41,7 +42,7 @@ class FlatsParser(metaclass=SingletonMeta):
         self.telegram_bot.send_message("Bot started")
 
         ss = SSParser(self.scheduler, self.telegram_bot, self.postgres,
-                      self.config.districts, self.config.parsers.ss, self.config.telegram.sleep_time)
+                      self.config.districts, self.config.parsers.ss)
         ss.run()
 
         self.scheduler.start()
@@ -63,4 +64,9 @@ class FlatsParser(metaclass=SingletonMeta):
 
 if __name__ == "__main__":
     scraper = FlatsParser()
+    # try:
+    #     while True:
+    #         time.sleep(1)
+    # except KeyboardInterrupt:
+    #     scraper.cleanup()
     scraper.run()

@@ -12,11 +12,12 @@ from scraper.utils.logger import logger
 
 
 class TelegramBot:
-    def __init__(self, postgres: Postgres):
+    def __init__(self, postgres: Postgres, sleep: int):
         self.token = os.getenv("TELEGRAM_TOKEN")
         self.bot = telebot.TeleBot(self.token, threaded=True)
         self.chat_id = os.getenv("TELEGRAM_CHAT_ID")
         self.postgres = postgres
+        self.sleep = sleep
 
         self.bot.callback_query_handler(func=lambda call: call.data.startswith(
             "add_to_favorites:"))(self.handle_add_to_favorites)
@@ -76,8 +77,9 @@ class TelegramBot:
             )
         for counter, favorite in enumerate(favorites, start=1):
             flat = Flat.from_sql_row(*favorite)
+            if flat.image_data is not None:
+                self.send_flat_image(flat)
             self.send_flat_message(flat, Type.FAVOURITE_FLATS, counter)
-            time.sleep(0.5)
 
     def send_flat_message(self, flat: Flat, type: Type, counter: str = None):
         msg_txt = self.flat_to_msg(flat, counter)
@@ -104,6 +106,7 @@ class TelegramBot:
             parse_mode="Markdown",
             reply_markup=markup
         )
+        time.sleep(self.sleep)
 
     def send_flat_image(self, flat: Flat):
         image_file = io.BytesIO(flat.image_data)
@@ -113,6 +116,7 @@ class TelegramBot:
             photo=image_file,
             parse_mode="Markdown"
         )
+        time.sleep(self.sleep)
 
     def flat_to_msg(self, flat: Flat, counter: int = None) -> str:
         base_msg = (
@@ -134,5 +138,5 @@ class TelegramBot:
                 self.bot.polling(none_stop=True)
             except Exception as e:
                 print(f"Error in bot polling: {e}")
-                time.sleep(5)
+                time.sleep(self.sleep)
                 continue

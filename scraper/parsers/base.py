@@ -3,11 +3,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 
 class BaseParser:
-    def __init__(self, source: str, scheduler: BackgroundScheduler, deal_type: str, sleep_time: int = 3):
+    def __init__(self, source: str, scheduler: BackgroundScheduler, deal_type: str):
         self.source = source
         self.scheduler = scheduler
         self.deal_type = deal_type
-        self.sleep_time = sleep_time
 
     def run(self):
         districts = self.get_districts_list()

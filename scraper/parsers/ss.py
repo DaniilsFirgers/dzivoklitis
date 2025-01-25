@@ -16,11 +16,11 @@ from geopy.geocoders import Nominatim
 
 class SSParser(BaseParser):
     def __init__(self, scheduler: BackgroundScheduler, telegram_bot: TelegramBot, postgres: Postgres,
-                 districts: List[District], config: SsParserConfig, sleep_time: int
+                 districts: List[District], config: SsParserConfig
                  ):
 
         super().__init__(config.name, scheduler,
-                         config.deal_type, sleep_time)
+                         config.deal_type)
         self.city_name = config.city_name
         self.districts = districts
         self.look_back_arg = config.timeframe
@@ -156,9 +156,7 @@ class SSParser(BaseParser):
                 counter = f"*{index}/{len(flats)}*"
                 if flat.image_data is not None:
                     self.telegram_bot.send_flat_image(flat)
-                time.sleep(self.sleep_time)
                 self.telegram_bot.send_flat_message(flat, Type.FLATS, counter)
-                time.sleep(self.sleep_time)
 
     def get_image_url(self, image_urls: ResultSet[Tag], i: int) -> str | None:
         if len(image_urls) == 0:
@@ -183,7 +181,8 @@ class SSParser(BaseParser):
             })
 
             if location is None:
-                print(f"Could not get coordinates for {street}")
+                logger.warning(
+                    f"Could not find coordinates for {street} in {city}")
                 return None
 
             return Coordinates(location.latitude, location.longitude)
