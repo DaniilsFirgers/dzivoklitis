@@ -1,3 +1,4 @@
+import io
 import time
 import telebot
 from telebot import types
@@ -100,6 +101,14 @@ class TelegramBot:
             text=msg_txt,
             parse_mode="Markdown",
             reply_markup=markup
+        )
+    def send_flat_image(self, flat: Flat):
+        image_file = io.BytesIO(flat.image_data)
+        image_file.name = f"{flat.id}.jpg"
+        self.bot.send_photo(
+            chat_id=self.chat_id,
+            photo=image_file,
+            parse_mode="Markdown"
         )
 
     def flat_to_msg(self, flat: Flat, counter: int = None) -> str:

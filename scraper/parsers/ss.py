@@ -152,8 +152,11 @@ class SSParser(BaseParser):
             self.telegram_bot.send_message(msg)
 
             for index, flat in enumerate(flats, start=1):
-                msg = f"*{index}/{len(flats)}*"
-                self.telegram_bot.send_flat_message(flat, Type.FLATS, msg)
+                counter = f"*{index}/{len(flats)}*"
+                if flat.image_data is not None:
+                    self.telegram_bot.send_flat_image(flat)
+                time.sleep(self.sleep_time)
+                self.telegram_bot.send_flat_message(flat, Type.FLATS, counter)
                 time.sleep(self.sleep_time)
 
     def get_image_url(self, image_urls: ResultSet[Tag], i: int) -> str | None:
@@ -162,7 +165,9 @@ class SSParser(BaseParser):
         if int(i/7) >= len(image_urls):
             return None
         img_url: str = image_urls[int(i/7)].get("src")
-        return img_url
+        # Replace thumbnail with full size image
+        adjusted_img_url = img_url.replace("th2", "800")
+        return adjusted_img_url
 
     def get_coordinates(self, city: str, street: str) -> Coordinates | None:
         geolocator = Nominatim(user_agent="flats_scraper")

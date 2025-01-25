@@ -1,10 +1,12 @@
 import hashlib
+import io
 import re
 from scraper.config import District, Source
 from dataclasses import dataclass, field
 from typing import Optional
 from scraper.utils.meta import try_parse_float, try_parse_int
 import requests
+from PIL import Image
 
 
 @dataclass
@@ -148,4 +150,14 @@ class SS_Flat(Flat):
         response = requests.get(self.img_url)
         if response.status_code != 200:
             return
-        self.image_data = response.content
+
+        image_file = io.BytesIO(response.content)
+        image = Image.open(image_file)
+        max_size = (303, 230)
+
+        image.thumbnail(max_size, Image.LANCZOS)  # Maintains aspect ratio
+        resized_image_file = io.BytesIO()
+        image.save(resized_image_file, format="JPEG")
+
+        resized_image_file.seek(0)
+        self.image_data = resized_image_file.getvalue()
