@@ -1,4 +1,5 @@
 import io
+import os
 import time
 import telebot
 from telebot import types
@@ -11,9 +12,10 @@ from scraper.utils.logger import logger
 
 
 class TelegramBot:
-    def __init__(self, token: str, chat_id: str, postgres: Postgres):
-        self.bot = telebot.TeleBot(token, threaded=True)
-        self.chat_id = chat_id
+    def __init__(self, postgres: Postgres):
+        self.token = os.getenv("TELEGRAM_TOKEN")
+        self.bot = telebot.TeleBot(self.token, threaded=True)
+        self.chat_id = os.getenv("TELEGRAM_CHAT_ID")
         self.postgres = postgres
 
         self.bot.callback_query_handler(func=lambda call: call.data.startswith(
@@ -102,6 +104,7 @@ class TelegramBot:
             parse_mode="Markdown",
             reply_markup=markup
         )
+
     def send_flat_image(self, flat: Flat):
         image_file = io.BytesIO(flat.image_data)
         image_file.name = f"{flat.id}.jpg"

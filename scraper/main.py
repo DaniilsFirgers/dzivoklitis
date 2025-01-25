@@ -1,7 +1,7 @@
 import time
 import toml
 from pathlib import Path
-from scraper.config import Config, District, ParserConfigs, SsParserConfig, TelegramConfig, PostgresConfig
+from scraper.config import Config, District, ParserConfigs, SsParserConfig, TelegramConfig
 from scraper.core.telegram import TelegramBot
 from scraper.core.postgres import Postgres
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -14,10 +14,8 @@ from scraper.parsers.ss import SSParser
 class FlatsParser(metaclass=SingletonMeta):
     def __init__(self):
         self.config = self.load_config()
-        self.postgres = Postgres(
-            self.config.postgres.host, self.config.postgres.port, self.config.postgres.user, self.config.postgres.password, self.config.postgres.database)
-        self.telegram_bot = TelegramBot(
-            self.config.telegram.token, self.config.telegram.chat_id, self.postgres)
+        self.postgres = Postgres()
+        self.telegram_bot = TelegramBot(self.postgres)
         self.scheduler = BackgroundScheduler()
 
     def load_config(self):
@@ -31,10 +29,9 @@ class FlatsParser(metaclass=SingletonMeta):
         parsers = ParserConfigs(
             ss=SsParserConfig(**parsers_data["ss"])
         )
-        postgres = PostgresConfig(**data["postgres"])
         districts = [District(**district) for district in data["districts"]]
 
-        return Config(telegram=telegram, parsers=parsers, districts=districts, postgres=postgres)
+        return Config(telegram=telegram, parsers=parsers, districts=districts)
 
     def run(self):
         self.telegram_bot.start_polling()

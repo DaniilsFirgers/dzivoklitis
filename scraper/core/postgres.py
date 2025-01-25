@@ -4,6 +4,7 @@ import psycopg2
 from scraper.flat import Flat
 from scraper.utils.logger import logger
 from scraper.utils.meta import SingletonMeta
+import os
 
 
 class Type(Enum):
@@ -13,12 +14,12 @@ class Type(Enum):
 
 
 class Postgres(metaclass=SingletonMeta):
-    def __init__(self, host: str, port: int, user: str, password: str, database: str):
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        self.database = database
+    def __init__(self):
+        self.host = os.getenv("POSTGRES_HOST", "localhost")
+        self.port = os.getenv("POSTGRES_PORT", 5432)
+        self.user = os.getenv("POSTGRES_USER", "postgres")
+        self.password = os.getenv("POSTGRES_PASSWORD", "postgres")
+        self.database = os.getenv("POSTGRES_DB", "flats")
         self.conn = None
         self.cursor = None
 
