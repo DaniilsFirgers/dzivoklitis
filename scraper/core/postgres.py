@@ -9,7 +9,7 @@ import os
 
 class Type(Enum):
     FLATS = "flats"
-    FLAT_PRICE_UPDATES = "flat_price_updates"
+    FLATS_PRICES = "flats_price"
     FAVOURITE_FLATS = "favourite_flats"
 
 
@@ -53,7 +53,7 @@ class Postgres(metaclass=SingletonMeta):
         """
         query = f"""
             SELECT 1 FROM {Type.FLATS.value} f
-            JOIN {Type.FLAT_PRICE_UPDATES.value} p ON f.flat_id = p.flat_id
+            JOIN {Type.FLATS_PRICES.value} p ON f.flat_id = p.flat_id
             WHERE f.flat_id = %s AND ABS(p.price_per_m2 - %s) < %s
             LIMIT 1;
             """
@@ -72,7 +72,7 @@ class Postgres(metaclass=SingletonMeta):
                     WHERE flat_id = %s;"""
                 self.cursor.execute(update_flat_query, (flat.url, flat.id))
 
-                insert_price_query = f"""INSERT INTO {Type.FLAT_PRICE_UPDATES.value} (flat_id, price_per_m2)
+                insert_price_query = f"""INSERT INTO {Type.FLATS_PRICES.value} (flat_id, price_per_m2)
                     VALUES (%s, %s);"""
                 self.cursor.execute(insert_price_query,
                                     (flat.id, flat.price_per_m2))
@@ -82,7 +82,7 @@ class Postgres(metaclass=SingletonMeta):
                 self.cursor.execute(query, (flat.id, flat.source.value, flat.url, flat.district, flat.street,
                                     flat.rooms, flat.area, flat.floor, flat.floors_total, flat.series, flat.longitude, flat.latitude, flat.image_data))
 
-                query = f"""INSERT INTO {Type.FLAT_PRICE_UPDATES.value} (flat_id, price_per_m2) VALUES (%s, %s)"""
+                query = f"""INSERT INTO {Type.FLATS_PRICES.value} (flat_id, price_per_m2) VALUES (%s, %s)"""
                 self.cursor.execute(query, (flat.id, flat.price_per_m2))
             self.conn.commit()
         except psycopg2.Error as e:
@@ -134,7 +134,7 @@ class Postgres(metaclass=SingletonMeta):
             INNER JOIN {Type.FLATS.value} f ON ff.flat_id = f.flat_id
             LEFT JOIN LATERAL (
                 SELECT price_per_m2
-                FROM {Type.FLAT_PRICE_UPDATES.value} p
+                FROM {Type.FLATS_PRICES.value} p
                 WHERE p.flat_id = f.flat_id
                 ORDER BY p.updated_at DESC
                 LIMIT 1
