@@ -19,7 +19,7 @@ At the moment cron jobs are set to run at 9,12,15,18 and 21, but can be changed 
 
 TODO:
 
-- [ ] Transfer favourite ads from old database tso the new one
+- [ ] Create backup for Postgres data
 - [ ] User registration? Do i need UI or go with instagram app?
 - [ ] Notification when price changes detected
 - [ ] Show history of price changes
