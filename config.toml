@@ -1,4 +1,5 @@
-title = "Flats web scraper"
+name = "Flats web scraper"
+version = "1.0.1"
 
 [parsers]
 [parsers.ss]
@@ -8,7 +9,7 @@ name = "ss"
 timeframe = "today-2"
 
 [telegram]
-sleep_time = 3
+sleep_time = 0.5 # 1000ms
 
 [[districts]]
 max_price_per_m2 = 2500

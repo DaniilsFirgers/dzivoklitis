@@ -24,7 +24,7 @@ class ParserConfigs:
 
 @dataclass(frozen=True)
 class TelegramConfig:
-    sleep_time: int
+    sleep_time: float
 
 
 @dataclass(frozen=True)
@@ -40,6 +40,8 @@ class District:
 
 @dataclass(frozen=True)
 class Config:
+    name: str
+    version: str
     parsers: ParserConfigs
     telegram: TelegramConfig
     districts: List[District]
