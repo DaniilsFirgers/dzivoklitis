@@ -14,8 +14,8 @@ from scraper.utils.logger import logger
 class TelegramBot:
     def __init__(self, postgres: Postgres, sleep: int):
         self.token = os.getenv("TELEGRAM_TOKEN")
+        self.user_id = os.getenv("TELEGRAM_USER_ID")
         self.bot = telebot.TeleBot(self.token, threaded=True)
-        self.chat_id = os.getenv("TELEGRAM_CHAT_ID")
         self.postgres = postgres
         self.sleep = sleep
 
@@ -24,10 +24,19 @@ class TelegramBot:
         self.bot.callback_query_handler(func=lambda call: call.data.startswith(
             "remove_from_favorites:"))(self.handle_remove_from_favorites)
         self.bot.message_handler(commands=["favorites"])(self.send_favorites)
+        self.bot.message_handler(commands=["start"])(self.start)
 
     def start_polling(self):
         polling_thread = Thread(target=self._start_polling, daemon=True)
         polling_thread.start()
+
+    def start(self):
+        self.bot.send_message(
+            self.user_id,
+            "Hello! I'm a bot that will help you find flats."
+            "You can use the following commands:\n"
+            "/favorites - to see your favorite flats\n"
+        )
 
     def handle_add_to_favorites(self, call: types.CallbackQuery):
         try:
@@ -63,7 +72,7 @@ class TelegramBot:
 
     def send_message(self, message: str):
         self.bot.send_message(
-            chat_id=self.chat_id,
+            chat_id=self.user_id,
             text=message,
             parse_mode="Markdown"
         )
@@ -72,7 +81,7 @@ class TelegramBot:
         favorites = self.postgres.get_favourites()
         if not favorites:
             return self.bot.send_message(
-                chat_id=self.chat_id,
+                chat_id=self.user_id,
                 text="You don't have any favorites yet 😢"
             )
         for counter, favorite in enumerate(favorites, start=1):
@@ -99,21 +108,22 @@ class TelegramBot:
             )
 
         if flat.image_data is None:
-            self.bot.send_message(
-                chat_id=self.chat_id,
+            return self.bot.send_message(
+                chat_id=self.user_id,
                 text=msg_txt,
                 parse_mode="Markdown",
                 reply_markup=markup
             )
-        else:
-            image_file = io.BytesIO(flat.image_data)
-            image_file.name = f"{flat.id}.jpg"
-            self.bot.send_photo(
-                chat_id=self.chat_id,
-                caption=msg_txt,
-                photo=image_file,
-                parse_mode="Markdown"
-            )
+        image_file = io.BytesIO(flat.image_data)
+        image_file.name = f"{flat.id}.jpg"
+        self.bot.send_photo(
+            chat_id=self.user_id,
+            photo=image_file,
+            caption=msg_txt,
+            parse_mode="Markdown",
+            reply_markup=markup
+        )
+
         time.sleep(self.sleep)
 
     def flat_to_msg(self, flat: Flat, counter: int = None) -> str:
@@ -128,7 +138,7 @@ class TelegramBot:
             f"*Full price*: {flat.full_price}\n"
         )
 
-        return f"#: {counter}\n" + base_msg if counter is not None else base_msg
+        return f"*Index*: {counter}\n" + base_msg if counter is not None else base_msg
 
     def _start_polling(self):
         while True:
