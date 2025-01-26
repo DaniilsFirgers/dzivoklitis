@@ -154,8 +154,6 @@ class SSParser(BaseParser):
 
             for index, flat in enumerate(flats, start=1):
                 counter = f"*{index}/{len(flats)}*"
-                if flat.image_data is not None:
-                    self.telegram_bot.send_flat_image(flat)
                 self.telegram_bot.send_flat_message(flat, Type.FLATS, counter)
 
     def get_image_url(self, image_urls: ResultSet[Tag], i: int) -> str | None:
