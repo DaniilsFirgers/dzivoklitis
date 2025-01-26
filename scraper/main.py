@@ -32,14 +32,15 @@ class FlatsParser(metaclass=SingletonMeta):
         )
         districts = [District(**district) for district in data["districts"]]
 
-        return Config(telegram=telegram, parsers=parsers, districts=districts)
+        return Config(telegram=telegram, parsers=parsers, districts=districts, version=data["version"], name=data["name"])
 
     def run(self):
         self.telegram_bot.start_polling()
         self.scheduler.configure(timezone=pytz.timezone("Europe/Riga"))
         self.postgres.connect()
 
-        self.telegram_bot.send_message("Bot started")
+        self.telegram_bot.send_message(
+            f"Started *{self.config.name}* scraper v*{self.config.version}*")
 
         ss = SSParser(self.scheduler, self.telegram_bot, self.postgres,
                       self.config.districts, self.config.parsers.ss)
@@ -64,9 +65,4 @@ class FlatsParser(metaclass=SingletonMeta):
 
 if __name__ == "__main__":
     scraper = FlatsParser()
-    # try:
-    #     while True:
-    #         time.sleep(1)
-    # except KeyboardInterrupt:
-    #     scraper.cleanup()
     scraper.run()
