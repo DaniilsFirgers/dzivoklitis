@@ -1,36 +1,45 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import List, Literal
 
 
+class Source(Enum):
+    SS = "ss"
+    MM = "mm"
+    CITY_24 = "city24"
+
+
 @dataclass(frozen=True)
-class GeneralConfig:
+class SsParserConfig:
     city_name: str
+    name: str
     deal_type: Literal["buy", "sell", "hand_over"]
-    look_back_argument: Literal["today", "today-2", "today-5"]
-    message_sleep: int
-    records_delete_interval: int
-    db_name: str
+    timeframe: Literal["today", "today-2", "today-5"]
+
+
+@dataclass
+class ParserConfigs:
+    ss: SsParserConfig
 
 
 @dataclass(frozen=True)
 class TelegramConfig:
-    token: str
-    chat_id: str
+    sleep_time: int
 
 
 @dataclass(frozen=True)
 class District:
     name: str
-    price_per_m2: int  # TODO:  rename to max_price_per_m2
+    max_price_per_m2: int
     min_price_per_m2: int
     rooms: int
     min_m2: int
     min_floor: int
-    last_floor: bool
+    skip_last_floor: bool
 
 
 @dataclass(frozen=True)
 class Config:
-    general: GeneralConfig
+    parsers: ParserConfigs
     telegram: TelegramConfig
-    districts:    List[District]
+    districts: List[District]

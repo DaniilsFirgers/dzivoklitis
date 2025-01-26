@@ -1,0 +1,65 @@
+title = "Flats web scraper"
+
+[parsers]
+[parsers.ss]
+city_name = "Riga"
+deal_type = "sell"
+name = "ss"
+timeframe = "today-2"
+
+[telegram]
+sleep_time = 3
+
+[[districts]]
+max_price_per_m2 = 2500
+min_floor = 2
+min_m2 = 40
+min_price_per_m2 = 1100
+name = "centre"
+rooms = 2
+skip_last_floor = true
+
+[[districts]]
+max_price_per_m2 = 1800
+min_floor = 3
+min_m2 = 50
+min_price_per_m2 = 750
+name = "imanta"
+rooms = 2
+skip_last_floor = false
+
+[[districts]]
+max_price_per_m2 = 1900
+min_floor = 3
+min_m2 = 50
+min_price_per_m2 = 750
+name = "purvciems"
+rooms = 2
+skip_last_floor = true
+
+[[districts]]
+max_price_per_m2 = 2000
+min_floor = 2
+min_m2 = 45
+min_price_per_m2 = 850
+name = "mezhapark"
+rooms = 2
+skip_last_floor = false
+
+[[districts]]
+max_price_per_m2 = 1700
+min_floor = 3
+min_m2 = 50
+min_price_per_m2 = 750
+name = "plyavnieki"
+rooms = 2
+skip_last_floor = true
+
+[[districts]]
+max_price_per_m2 = 2300
+min_floor = 3
+min_m2 = 45
+min_price_per_m2 = 750
+name = "teika"
+rooms = 2
+skip_last_floor = false

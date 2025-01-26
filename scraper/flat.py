@@ -1,79 +1,163 @@
+import hashlib
+import io
 import re
+from scraper.config import District, Source
+from dataclasses import dataclass, field
+from typing import Optional
+from scraper.utils.meta import try_parse_float, try_parse_int
+import requests
+from PIL import Image
 
-from scraper.config import District
+
+@dataclass
+class Coordinates:
+    latitude: float
+    longitude: float
 
 
-class Flat:
-    def __init__(self, id: str, link: str, district: str, **kwargs):
-        self.id = id
-        self.link = link
-        self.district = district
+@dataclass
+class Flat():
+    url: str
+    district: str
+    source: Source
+    id: str = field(default=None)
+    district_info: Optional[District] = field(default=None)
+    price_per_m2: Optional[int] = field(default=None)
+    rooms: Optional[int] = field(default=None)
+    street: Optional[str] = field(default=None)
+    area: Optional[float] = field(default=None)
+    floor: Optional[int] = field(default=None)
+    floors_total: Optional[int] = field(default=None)
+    series: Optional[str] = field(default=None)
+    full_price: Optional[int] = field(default=None)
+    latitude: Optional[float] = field(default=None)
+    longitude: Optional[float] = field(default=None)
+    image_data: Optional[bytes] = field(default=None)
 
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+    def __post_init__(self):
+        self.create()
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "link": self.link,
-            "district": self.district,
-            "price_per_m2": self.price_per_m2,
-            "rooms": self.rooms,
-            "street": self.street,
-            "m2": self.m2,
-            "floor": self.floor,
-            "last_floor": self.last_floor,
-            "series": self.series,
-            "full_price": self.full_price
-        }
+    def create(self):
+        pass
 
-    def add_info(self, raw_info: list[str], settings: District):
-        if len(raw_info) != 7:
+    def validate(self):
+        if not self.district_info:
+            raise ValueError("District info is not set")
+        pass
+
+    def add_coordinates(self, coordinates: Coordinates):
+        self.latitude = coordinates.latitude
+        self.longitude = coordinates.longitude
+
+    def create_id(self):
+        """Creates a unique id for the flat based on the following attributes:
+            - source
+            - district
+            - street
+            - series
+            - rooms
+            - area
+            - floor 
+            - floors_total
+        This strategy is used because the id in the source website can change. Moreover, we want to track
+        how the price changes for the same flat over time.
+        For a more efficient storage, we hash the id with md5.
+        """
+        return hashlib.md5(
+            f"{self.source.value}-{self.district}-{self.street}-{self.series}-{self.rooms}-{self.area}-{self.floor}-{self.floors_total}".encode()).hexdigest()
+
+    @classmethod
+    def from_sql_row(cls, *row):
+        """
+        Creates a Flat object from an SQL row.
+        Maps row values to class attributes in order.
+        """
+        if (len(row) != 14):
+            raise ValueError("Incorrect number of elements in row")
+
+        return cls(
+            id=row[0],
+            source=row[1],
+            url=row[2],
+            district=row[3],
+            street=row[4],
+            rooms=row[5],
+            floors_total=row[6],
+            floor=row[7],
+            area=row[8],
+            series=row[9],
+            full_price=int(row[13] * row[8]),
+            price_per_m2=row[13],
+            latitude=row[10],
+            longitude=row[11],
+            image_data=row[12]
+        )
+
+
+class SS_Flat(Flat):
+    def __init__(self, url: str, district_info: District, raw_info: list[str], img_url: str | None):
+        self.raw_info = raw_info
+        self.img_url = img_url
+        super().__init__(url=url, district=district_info.name,
+                         source=Source.SS, district_info=district_info)
+
+    def create(self):
+        if len(self.raw_info) != 7:
             raise ValueError("Incorrect number of elements in raw_info")
+        self.price_per_m2 = try_parse_int(
+            re.sub(r"[^\d]", "", self.raw_info[5]))
+        self.rooms = try_parse_int(self.raw_info[1])
+        self.street = self.raw_info[0]
+        self.area = try_parse_float(self.raw_info[2])
+        floors = self.parse_floors(self.raw_info[3])
+        self.floor, self.floors_total = floors
+        self.series = self.raw_info[4]
+        self.full_price = self.area * float(self.price_per_m2)
+        self.id = self.create_id()
 
-        self.price_per_m2 = self.try_parse_int(
-            re.sub(r"[^\d]", "", raw_info[5]))
-        if (settings.price_per_m2 < self.price_per_m2):
+    def validate(self):
+        if (self.price_per_m2 > self.district_info.max_price_per_m2):
             raise ValueError("Price per m2 is higher than the limit")
-        if (self.price_per_m2 < settings.min_price_per_m2):
+        if (self.price_per_m2 < self.district_info.min_price_per_m2):
             raise ValueError("Price per m2 is lower than the limit")
-        self.rooms = self.try_parse_int(raw_info[1])
-        if (self.rooms != settings.rooms):
+        if (self.rooms != self.district_info.rooms):
             raise ValueError("Rooms do not match the settings")
-        self.street = raw_info[0]
-        self.m2 = self.try_parse_float(raw_info[2])
-        if (self.m2 < settings.min_m2):
-            raise ValueError("M2 is lower than the limit")
-        floors = self.parse_floors(raw_info[3])
-        if floors is None:
-            raise ValueError("Could not parse floors")
-        self.floor, self.last_floor = floors
-        if (self.floor < settings.min_floor):
+        if (self.area < self.district_info.min_m2):
+            raise ValueError("Area is less than the limit")
+        if (self.floor < self.district_info.min_floor):
             raise ValueError("Floor is lower than the limit")
-        if (self.last_floor == self.floor and not settings.last_floor):
+        if (self.floors_total == None or self.floor == None):
+            raise ValueError("Could not parse floors")
+        if (self.floors_total == self.floor and self.district_info.skip_last_floor):
             raise ValueError("Last floor is not allowed")
-        self.series = raw_info[4]
-        self.full_price = self.try_parse_int(re.sub(r"[^\d]", "", raw_info[6]))
+        if (self.floors_total < self.floor):
+            raise ValueError("Last floor is lower than the floor")
 
-    def try_parse_int(self, value: str) -> int:
-        try:
-            return int(value)
-        except ValueError:
-            return 0
-
-    def try_parse_float(self, value: str) -> float:
-        try:
-            return float(value)
-        except ValueError:
-            return 0.0
-
-    def parse_floors(self, floors: str) -> tuple[int, int] | None:
+    def parse_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
         try:
             actual_floor_str, last_floor_str = floors.split("/")
             actual_floor = int(actual_floor_str)
-            last_floor = int(last_floor_str)
-            return actual_floor, last_floor
+            floors_total = int(last_floor_str)
+            return actual_floor, floors_total
         except ValueError:
-            return None
+            return None, None
         except Exception:
-            return None
+            return None, None
+
+    def load_img(self):
+        if self.img_url is None:
+            return
+        response = requests.get(self.img_url)
+        if response.status_code != 200:
+            return
+
+        image_file = io.BytesIO(response.content)
+        image = Image.open(image_file)
+        max_size = (303, 230)
+
+        image.thumbnail(max_size, Image.LANCZOS)  # Maintains aspect ratio
+        resized_image_file = io.BytesIO()
+        image.save(resized_image_file, format="JPEG")
+
+        resized_image_file.seek(0)
+        self.image_data = resized_image_file.getvalue()
