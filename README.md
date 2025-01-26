@@ -21,6 +21,8 @@ TODO:
 
 - [ ] Transfer favourite ads from old database tso the new one
 - [ ] User registration? Do i need UI or go with instagram app?
+- [ ] Notification when price changes detected
+- [ ] Show history of price changes
 - [ ] Add city24.lv scraper
 - [ ] Add zip.lv scraper
 - [ ] Add mm.lv scraper
