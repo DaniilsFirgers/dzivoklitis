@@ -128,7 +128,7 @@ class SS_Flat(Flat):
             raise ValueError("Floor is lower than the limit")
         if (self.floors_total == None or self.floor == None):
             raise ValueError("Could not parse floors")
-        if (self.floors_total == self.floor and not self.district_info.skip_last_floor):
+        if (self.floors_total == self.floor and self.district_info.skip_last_floor):
             raise ValueError("Last floor is not allowed")
         if (self.floors_total < self.floor):
             raise ValueError("Last floor is lower than the floor")
