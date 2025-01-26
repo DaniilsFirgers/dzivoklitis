@@ -77,8 +77,6 @@ class TelegramBot:
             )
         for counter, favorite in enumerate(favorites, start=1):
             flat = Flat.from_sql_row(*favorite)
-            if flat.image_data is not None:
-                self.send_flat_image(flat)
             self.send_flat_message(flat, Type.FAVOURITE_FLATS, counter)
 
     def send_flat_message(self, flat: Flat, type: Type, counter: str = None):
@@ -100,22 +98,22 @@ class TelegramBot:
                     "❤️ Add to Favorites", callback_data=f"add_to_favorites:{flat.id}"),
             )
 
-        self.bot.send_message(
-            chat_id=self.chat_id,
-            text=msg_txt,
-            parse_mode="Markdown",
-            reply_markup=markup
-        )
-        time.sleep(self.sleep)
-
-    def send_flat_image(self, flat: Flat):
-        image_file = io.BytesIO(flat.image_data)
-        image_file.name = f"{flat.id}.jpg"
-        self.bot.send_photo(
-            chat_id=self.chat_id,
-            photo=image_file,
-            parse_mode="Markdown"
-        )
+        if flat.image_data is None:
+            self.bot.send_message(
+                chat_id=self.chat_id,
+                text=msg_txt,
+                parse_mode="Markdown",
+                reply_markup=markup
+            )
+        else:
+            image_file = io.BytesIO(flat.image_data)
+            image_file.name = f"{flat.id}.jpg"
+            self.bot.send_photo(
+                chat_id=self.chat_id,
+                caption=msg_txt,
+                photo=image_file,
+                parse_mode="Markdown"
+            )
         time.sleep(self.sleep)
 
     def flat_to_msg(self, flat: Flat, counter: int = None) -> str:
