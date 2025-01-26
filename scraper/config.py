@@ -24,7 +24,7 @@ class ParserConfigs:
 
 @dataclass(frozen=True)
 class TelegramConfig:
-    sleep_time: int
+    sleep_time: float
 
 
 @dataclass(frozen=True)
