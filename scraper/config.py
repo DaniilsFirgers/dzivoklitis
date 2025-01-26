@@ -40,6 +40,8 @@ class District:
 
 @dataclass(frozen=True)
 class Config:
+    name: str
+    version: str
     parsers: ParserConfigs
     telegram: TelegramConfig
     districts: List[District]
