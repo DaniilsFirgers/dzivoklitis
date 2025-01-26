@@ -5,7 +5,7 @@
 The app currently holds a scraper for [ss.lv](https://www.ss.com) public flats ads. The general configuration can be found in the config.toml file, while sensitive variables are declared in `.env` file:
 
 ```
-TELEGRAM_CHAT_ID = "<YOUR_TELEGRAM_CHAT_ID>"
+TELEGRAM_USER_ID = "<YOUR_TELEGRAM_USER_ID>"
 TELEGRAM_TOKEN = "<YOUR_TELEGRAM_TOKEN>"
 POSTGRES_USER = "<POSTGRES_DB_USER>"
 POSTGRES_PASSWORD = "<POSTGRES_DB_PASSWORD>"
@@ -20,7 +20,9 @@ At the moment cron jobs are set to run at 9,12,15,18 and 21, but can be changed 
 TODO:
 
 - [ ] Create backup for Postgres data
-- [ ] User registration? Do i need UI or go with instagram app?
+- [ ] Async functions
+- [ ] Rabbit or similar for events
+- [ ] User registration? Do i need UI or go with telegram app?
 - [ ] Notification when price changes detected
 - [ ] Show history of price changes
 - [ ] Add city24.lv scraper
