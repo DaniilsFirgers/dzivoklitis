@@ -11,7 +11,7 @@ timeframe = "today-2"
 sleep_time = 3
 
 [[districts]]
-max_price_per_m2 = 2400
+max_price_per_m2 = 2500
 min_floor = 2
 min_m2 = 40
 min_price_per_m2 = 1100
@@ -29,13 +29,13 @@ rooms = 2
 skip_last_floor = false
 
 [[districts]]
-max_price_per_m2 = 1700
+max_price_per_m2 = 1900
 min_floor = 3
 min_m2 = 50
 min_price_per_m2 = 750
 name = "purvciems"
 rooms = 2
-skip_last_floor = false
+skip_last_floor = true
 
 [[districts]]
 max_price_per_m2 = 2000
@@ -53,10 +53,10 @@ min_m2 = 50
 min_price_per_m2 = 750
 name = "plyavnieki"
 rooms = 2
-skip_last_floor = false
+skip_last_floor = true
 
 [[districts]]
-max_price_per_m2 = 2000
+max_price_per_m2 = 2300
 min_floor = 3
 min_m2 = 45
 min_price_per_m2 = 750
