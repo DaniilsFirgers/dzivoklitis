@@ -24,6 +24,8 @@ TODO:
 - [ ] Rabbit or similar for events
 - [ ] User registration? Do i need UI or go with telegram app?
 - [ ] Notification when price changes detected
+- [ ] Store flat for renting option
+- [ ] Store Riga districts so they are universal
 - [ ] Show history of price changes
 - [ ] Add city24.lv scraper
 - [ ] Add zip.lv scraper
