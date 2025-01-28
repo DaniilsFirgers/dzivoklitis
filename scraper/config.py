@@ -17,9 +17,17 @@ class SsParserConfig:
     timeframe: Literal["today", "today-2", "today-5"]
 
 
+@dataclass(frozen=True)
+class City24ParserConfig:
+    name: str
+    city_code: int  # Riga = 245396
+    deal_type: Literal["sale", "rent"]
+
+
 @dataclass
 class ParserConfigs:
     ss: SsParserConfig
+    city24: City24ParserConfig
 
 
 @dataclass(frozen=True)
