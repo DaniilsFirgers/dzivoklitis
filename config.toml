@@ -3,10 +3,15 @@ version = "1.0.1"
 
 [parsers]
 [parsers.ss]
-city_name = "Riga"
-deal_type = "sell"
-name = "ss"
-timeframe = "today-2"
+city_name = "Riga" 
+deal_type = "sell" # sell / hand_over (rent)
+name = "ss" 
+timeframe = "today-2" # today / today-2 / today-5
+
+[parsers.city_24]
+city_name = "Riga" 
+deal_type = "sale" # sale / rent
+name = "city_24" 
 
 [telegram]
 sleep_time = 0.5 # 1000ms
