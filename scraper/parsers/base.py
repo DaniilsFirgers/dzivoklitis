@@ -14,7 +14,7 @@ class BaseParser:
         self.scheduler.add_job(
             self.scrape, "cron", hour="9,12,15,18,21", minute=0, args=[districts])
 
-    def get_districts_list(self) -> List[int]:
+    def get_districts_list(self) -> List[int | str]:
         raise NotImplementedError
 
     def scrape(self, districts: List[int]) -> None:
