@@ -9,7 +9,7 @@ name = "ss"
 timeframe = "today-2" # today / today-2 / today-5
 
 [parsers.city_24]
-city_name = "Riga" 
+city_code = 245396 
 deal_type = "sale" # sale / rent
 name = "city_24" 
 
