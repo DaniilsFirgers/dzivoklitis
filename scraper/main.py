@@ -1,11 +1,12 @@
 import time
 import toml
 from pathlib import Path
-from scraper.config import Config, District, ParserConfigs, SsParserConfig, TelegramConfig
+from scraper.config import Config, District, ParserConfigs, SsParserConfig, City24ParserConfig, TelegramConfig
 from scraper.core.telegram import TelegramBot
 from scraper.core.postgres import Postgres
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
+from scraper.parsers.city_24 import City24Parser
 from scraper.utils.logger import logger
 from scraper.utils.meta import SingletonMeta
 from scraper.parsers.ss import SSParser
@@ -28,8 +29,11 @@ class FlatsParser(metaclass=SingletonMeta):
 
         parsers_data = data["parsers"]
         parsers = ParserConfigs(
-            ss=SsParserConfig(**parsers_data["ss"])
+            ss=SsParserConfig(**parsers_data["ss"]),
+            city24=City24ParserConfig(**parsers_data["city24"])
+
         )
+
         districts = [District(**district) for district in data["districts"]]
 
         return Config(telegram=telegram, parsers=parsers, districts=districts, version=data["version"], name=data["name"])
@@ -45,6 +49,9 @@ class FlatsParser(metaclass=SingletonMeta):
         ss = SSParser(self.scheduler, self.telegram_bot, self.postgres,
                       self.config.districts, self.config.parsers.ss)
         ss.run()
+
+        city24 = City24Parser(self.scheduler, self.telegram_bot,
+                              self.config.districts, self.config.parsers.city24)
 
         self.scheduler.start()
         for job in self.scheduler.get_jobs():
