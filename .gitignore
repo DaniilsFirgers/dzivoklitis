@@ -2,6 +2,3 @@
 
 # ignore pycache
 __pycache__/
-
-#igoner possible tiny db documents
-*.json
