@@ -40,8 +40,23 @@ class Flat():
     def create(self):
         pass
 
-    def validate(self):
-        pass
+    def validate(self, district_info: District):
+        if (self.price / self.area > district_info.max_price_per_m2):
+            raise ValueError("Price per m2 is higher than the limit")
+        if (self.price / self.area < district_info.min_price_per_m2):
+            raise ValueError("Price per m2 is lower than the limit")
+        if (self.rooms != district_info.rooms):
+            raise ValueError("Rooms do not match the settings")
+        if (self.area < district_info.min_m2):
+            raise ValueError("Area is less than the limit")
+        if (self.floor < district_info.min_floor):
+            raise ValueError("Floor is lower than the limit")
+        if (self.floors_total == None or self.floor == None):
+            raise ValueError("Could not parse floors")
+        if (self.floors_total == self.floor and district_info.skip_last_floor):
+            raise ValueError("Last floor is not allowed")
+        if (self.floors_total < self.floor):
+            raise ValueError("Last floor is lower than the floor")
 
     def add_coordinates(self, coordinates: Coordinates):
         self.latitude = coordinates.latitude
@@ -95,10 +110,10 @@ class Flat():
 
 class SS_Flat(Flat):
     def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: str, img_url: str | None):
-        self.raw_info = raw_info
-        self.img_url = img_url
         super().__init__(url=url, district=district_name,
                          source=Source.SS, deal_type=deal_type)
+        self.raw_info = raw_info
+        self.img_url = img_url
 
     def create(self):
         if len(self.raw_info) != 7:
@@ -114,24 +129,6 @@ class SS_Flat(Flat):
         self.floor, self.floors_total = floors
         self.series = self.raw_info[4]
         self.id = self.create_id()
-
-    def validate(self, district_info: District):
-        if (self.price / self.area > district_info.max_price_per_m2):
-            raise ValueError("Price per m2 is higher than the limit")
-        if (self.price / self.area < district_info.min_price_per_m2):
-            raise ValueError("Price per m2 is lower than the limit")
-        if (self.rooms != district_info.rooms):
-            raise ValueError("Rooms do not match the settings")
-        if (self.area < district_info.min_m2):
-            raise ValueError("Area is less than the limit")
-        if (self.floor < district_info.min_floor):
-            raise ValueError("Floor is lower than the limit")
-        if (self.floors_total == None or self.floor == None):
-            raise ValueError("Could not parse floors")
-        if (self.floors_total == self.floor and district_info.skip_last_floor):
-            raise ValueError("Last floor is not allowed")
-        if (self.floors_total < self.floor):
-            raise ValueError("Last floor is lower than the floor")
 
     def parse_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
         try:
@@ -161,3 +158,13 @@ class SS_Flat(Flat):
 
         resized_image_file.seek(0)
         self.image_data = resized_image_file.getvalue()
+
+
+class City24_Flat(Flat):
+    def __init__(self, url: str, district_name: str,  deal_type: str, img_url: str | None):
+        super().__init__(url=url, district=district_name,
+                         source=Source.CITY_24, deal_type=deal_type)
+        self.img_url = img_url
+
+    def create(self):
+        pass
