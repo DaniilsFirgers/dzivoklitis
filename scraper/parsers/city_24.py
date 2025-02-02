@@ -7,9 +7,11 @@ from fake_useragent import UserAgent
 import requests
 from scraper.config import City24ParserConfig, District, Source
 from scraper.core.postgres import Postgres
+from scraper.flat import City24_Flat
 from scraper.parsers.base import BaseParser
 from apscheduler.schedulers.background import BackgroundScheduler
 from scraper.core.telegram import TelegramBot
+from scraper.schemas.city_24 import City24
 from scraper.utils.logger import logger
 
 
@@ -78,5 +80,8 @@ class City24Parser(BaseParser):
                 )
                 return
 
-            flats = response.json()
-            print(flats)
+            flats: List[City24] = response.json()
+
+            for flat in flats:
+                new_flat = City24_Flat(
+                    "qwe", district_name, self.target_deal_type, flat.main_image.url)
