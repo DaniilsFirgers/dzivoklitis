@@ -1,34 +1,40 @@
+from dataclasses import dataclass
 from typing import Optional, TypedDict
 
 
-class MainImage(TypedDict):
+@dataclass
+class MainImage:
     url: str
 
 
-class Street(TypedDict):
+@dataclass
+class Street:
     name: str
 
 
-class Adress(TypedDict):
+@dataclass
+class Address:
     house_number: Optional[str]
     street: Street
 
 
-class Attributes(TypedDict):
+@dataclass
+class Attributes:
     HOUSE_TYPE: list[str]
     FLOOR: int
     TOTAL_FLOOR: int
     ON_LAST_FLOOR: bool
 
 
-class City24(TypedDict):
+@dataclass
+class City24:
     main_image: MainImage
     date_published: str
     latitude: float
     longitude: float
     price: str
     property_size: str
-    adress: Adress
+    address: Address
     district: str
     city_name: str
     room_count: int
