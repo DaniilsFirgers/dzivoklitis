@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Literal
+from typing import Dict, List, Literal
+
+################################# Scraper Config #################################
 
 
 class Source(Enum):
@@ -53,3 +55,25 @@ class Config:
     parsers: ParserConfigs
     telegram: TelegramConfig
     districts: List[District]
+
+
+################################ Platform Settings ################################
+
+@dataclass
+class Districts:
+    reference: Dict[str, str]  # [id, name]
+    ss: Dict[str, str]  # [platform_id, id]
+    city24: Dict[str, str]  # [platform_id, id]
+
+
+@dataclass
+class DealTypes:
+    reference: Dict[str, str]  # [id, name]
+    ss: Dict[str, str]  # [platform_id, id]
+    city24: Dict[str, str]  # [platform_id, id]
+
+
+@dataclass()
+class Settings:
+    districts: Districts
+    deal_types: DealTypes
