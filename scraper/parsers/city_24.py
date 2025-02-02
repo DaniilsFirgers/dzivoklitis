@@ -29,7 +29,7 @@ class City24Parser(BaseParser):
         \n Args:
             districts (Dict[str, str]): A dictionary of districts with their external keys and names.
         """
-        for district in self.districts:
+        for ext_key, district_name in self.districts.items():
             district_info = next(
                 (district for district in self.preferred_districts if district.name == district.name), None)
             if district_info is None:
@@ -51,8 +51,9 @@ class City24Parser(BaseParser):
             start_of_day_timestamp = int(start_of_day.timestamp())
             # Query parameters
             params = {
-                "address[city]": 245396,
-                "tsType": "sale",
+                "address[city]": self.city_code,
+                "address[district][]": ext_key,
+                "tsType":  platform_deal_type,
                 "unitType": "Apartment",
                 "itemsPerPage": 50,
                 "page": 1,
@@ -78,3 +79,4 @@ class City24Parser(BaseParser):
                 return
 
             flats = response.json()
+            print(flats)
