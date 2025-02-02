@@ -9,8 +9,8 @@ import os
 
 class Type(Enum):
     FLATS = "flats"
-    FLATS_PRICES = "flats_price"
-    FAVOURITE_FLATS = "favourite_flats"
+    PRICES = "prices"
+    FAVOURITES = "favourites"
 
 
 class Postgres(metaclass=SingletonMeta):
@@ -47,17 +47,17 @@ class Postgres(metaclass=SingletonMeta):
         self.cursor.execute(query, (flat_id,))
         return bool(self.cursor.fetchone())
 
-    def exists_with_id_and_price(self, flat_id: str, price_per_m2: float, tolerance: float = 0.1) -> bool:
+    def exists_with_id_and_price(self, flat_id: str, price: float, tolerance: float = 0.1) -> bool:
         """Check if a flat with a given id and price (per m^2) exists in the database.
         The price is checked with a tolerance to handle floating-point precision issues.
         """
         query = f"""
             SELECT 1 FROM {Type.FLATS.value} f
-            JOIN {Type.FLATS_PRICES.value} p ON f.flat_id = p.flat_id
-            WHERE f.flat_id = %s AND ABS(p.price_per_m2 - %s) < %s
+            JOIN {Type.PRICES.value} p ON f.flat_id = p.flat_id
+            WHERE f.flat_id = %s AND ABS(p.price - %s) < %s
             LIMIT 1;
             """
-        self.cursor.execute(query, (flat_id, price_per_m2, tolerance))
+        self.cursor.execute(query, (flat_id, price, tolerance))
         return bool(self.cursor.fetchone())
 
     def add_or_update(self, flat: Flat):
@@ -72,18 +72,18 @@ class Postgres(metaclass=SingletonMeta):
                     WHERE flat_id = %s;"""
                 self.cursor.execute(update_flat_query, (flat.url, flat.id))
 
-                insert_price_query = f"""INSERT INTO {Type.FLATS_PRICES.value} (flat_id, price_per_m2)
+                insert_price_query = f"""INSERT INTO {Type.PRICES.value} (flat_id, price)
                     VALUES (%s, %s);"""
                 self.cursor.execute(insert_price_query,
-                                    (flat.id, flat.price_per_m2))
+                                    (flat.id, flat.price))
             else:
-                query = f"""INSERT INTO {Type.FLATS.value} (flat_id, source, url, district, street, rooms, area, floor, floors_total, series, location, image_data)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(COALESCE(%s, 0), COALESCE(%s, 0)), 4326), %s)"""
-                self.cursor.execute(query, (flat.id, flat.source.value, flat.url, flat.district, flat.street,
+                query = f"""INSERT INTO {Type.FLATS.value} (flat_id, source, deal_type, url, district, street, rooms, area, floor, floors_total, series, location, image_data)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(COALESCE(%s, 0), COALESCE(%s, 0)), 4326), %s)"""
+                self.cursor.execute(query, (flat.id, flat.source.value, flat.deal_type, flat.url, flat.district, flat.street,
                                     flat.rooms, flat.area, flat.floor, flat.floors_total, flat.series, flat.longitude, flat.latitude, flat.image_data))
 
-                query = f"""INSERT INTO {Type.FLATS_PRICES.value} (flat_id, price_per_m2) VALUES (%s, %s)"""
-                self.cursor.execute(query, (flat.id, flat.price_per_m2))
+                query = f"""INSERT INTO {Type.PRICES.value} (flat_id, price) VALUES (%s, %s)"""
+                self.cursor.execute(query, (flat.id, flat.price))
             self.conn.commit()
         except psycopg2.Error as e:
             self.conn.rollback()
@@ -92,7 +92,7 @@ class Postgres(metaclass=SingletonMeta):
     def add_to_favourites(self, flat_id: str):
         """Add a flat to the favourites table."""
         try:
-            query = f"INSERT INTO {Type.FAVOURITE_FLATS.value} (flat_id) VALUES (%s)"
+            query = f"INSERT INTO {Type.FAVOURITES.value} (flat_id) VALUES (%s)"
             self.cursor.execute(query, (flat_id,))
             self.conn.commit()
         except psycopg2.Error as e:
@@ -118,6 +118,7 @@ class Postgres(metaclass=SingletonMeta):
             SELECT 
                 f.flat_id, 
                 f.source, 
+                f.deal_type,
                 f.url, 
                 f.district, 
                 f.street, 
@@ -129,12 +130,12 @@ class Postgres(metaclass=SingletonMeta):
                 ST_X(f.location) AS longitude, 
                 ST_Y(f.location) AS latitude, 
                 f.image_data, 
-                p.price_per_m2
-            FROM {Type.FAVOURITE_FLATS.value} ff
+                p.price
+            FROM {Type.FAVOURITES.value} ff
             INNER JOIN {Type.FLATS.value} f ON ff.flat_id = f.flat_id
             LEFT JOIN LATERAL (
-                SELECT price_per_m2
-                FROM {Type.FLATS_PRICES.value} p
+                SELECT price
+                FROM {Type.PRICES.value} p
                 WHERE p.flat_id = f.flat_id
                 ORDER BY p.updated_at DESC
                 LIMIT 1
