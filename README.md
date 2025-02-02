@@ -20,6 +20,7 @@ At the moment cron jobs are set to run at 9,12,15,18 and 21, but can be changed 
 TODO:
 
 - [ ] Create backup for Postgres data
+- [ ] Free proxies for requests
 - [ ] Async functions
 - [ ] Rabbit or similar for events
 - [ ] User registration? Do i need UI or go with telegram app?
