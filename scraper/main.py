@@ -22,7 +22,7 @@ class FlatsParser(metaclass=SingletonMeta):
 
     def load_config(self):
         config_path = Path("/app/config.toml")
-        with open(config_path, "r") as file:
+        with open(config_path, "r", encoding="utf-8") as file:
             data = toml.load(file)
 
         telegram = TelegramConfig(**data["telegram"])
