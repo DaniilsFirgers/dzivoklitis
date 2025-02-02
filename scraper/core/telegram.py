@@ -41,7 +41,7 @@ class TelegramBot:
     def handle_add_to_favorites(self, call: types.CallbackQuery):
         try:
             id = call.data.split(":")[1]
-            if self.postgres.exists_with_id(id, Type.FAVOURITE_FLATS):
+            if self.postgres.exists_with_id(id, Type.FAVOURITES):
                 return self.bot.answer_callback_query(
                     call.id, "Flat already in favorites ❤️"
                 )
@@ -60,7 +60,7 @@ class TelegramBot:
     def handle_remove_from_favorites(self, call: types.CallbackQuery):
         try:
             id = call.data.split(":")[1]
-            self.postgres.delete(id, Type.FAVOURITE_FLATS)
+            self.postgres.delete(id, Type.FAVOURITES)
             self.bot.answer_callback_query(
                 call.id, "Flat removed from favorites 🗑️"
             )
@@ -86,7 +86,7 @@ class TelegramBot:
             )
         for counter, favorite in enumerate(favorites, start=1):
             flat = Flat.from_sql_row(*favorite)
-            self.send_flat_message(flat, Type.FAVOURITE_FLATS, counter)
+            self.send_flat_message(flat, Type.FAVOURITES, counter)
 
     def send_flat_message(self, flat: Flat, type: Type, counter: str = None):
         msg_txt = self.flat_to_msg(flat, counter)
@@ -96,7 +96,7 @@ class TelegramBot:
             types.InlineKeyboardButton(
                 "🔍 View URL", url=flat.url),
         )
-        if type == Type.FAVOURITE_FLATS:
+        if type == Type.FAVOURITES:
             markup.add(
                 types.InlineKeyboardButton(
                     "🗑️ Delete", callback_data=f"remove_from_favorites:{flat.id}"),
@@ -128,14 +128,15 @@ class TelegramBot:
 
     def flat_to_msg(self, flat: Flat, counter: int = None) -> str:
         base_msg = (
+            f"*Source*: {flat.source.value}\n"
             f"*District*: {flat.district}\n"
             f"*Street*: {flat.street}\n"
             f"*Series*: {flat.series}\n"
             f"*Rooms*: {flat.rooms}\n"
             f"*M2*: {flat.area}\n"
             f"*Floor*: {flat.floor}/{flat.floors_total}\n"
-            f"*Price per m2*: {flat.price_per_m2}\n"
-            f"*Full price*: {flat.full_price}\n"
+            f"*Price per m2*: {flat.price}\n"
+            f"*Full price*: {flat.price}\n"
         )
 
         return f"*Index*: {counter}\n" + base_msg if counter is not None else base_msg
