@@ -32,3 +32,6 @@ TODO:
 - [ ] Add zip.lv scraper
 - [ ] Add mm.lv scraper
 - [ ] Add pp.lv scraper
+- [ ] Add varianti.lv scraper
+- [ ] Projects map
+- [ ] Make scrapers safe
