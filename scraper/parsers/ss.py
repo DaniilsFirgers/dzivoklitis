@@ -96,6 +96,11 @@ class SSParser(BaseParser):
                         continue
 
                     try:
+                        flat.create()
+                    except Exception as e:
+                        continue
+
+                    try:
                         flat.validate(district_info)
                     except ValueError as e:
                         continue
@@ -107,7 +112,7 @@ class SSParser(BaseParser):
                         flat.add_coordinates(coordinates)
 
                     if img_url is not None:
-                        flat.load_img()
+                        flat.download_img()
 
                     try:
                         self.postgres.add_or_update(flat)
