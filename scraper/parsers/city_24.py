@@ -1,6 +1,4 @@
 
-
-from datetime import datetime, timezone
 from typing import List
 
 from fake_useragent import UserAgent
@@ -11,8 +9,9 @@ from scraper.flat import City24_Flat
 from scraper.parsers.base import BaseParser
 from apscheduler.schedulers.background import BackgroundScheduler
 from scraper.core.telegram import TelegramBot
-from scraper.schemas.city_24 import City24
+from scraper.schemas.city_24 import City24ResFlatDict
 from scraper.utils.logger import logger
+from scraper.utils.meta import get_start_of_day
 
 
 class City24Parser(BaseParser):
@@ -44,14 +43,9 @@ class City24Parser(BaseParser):
             url = "https://api.city24.lv/lv_LV/search/realties"
             ua = UserAgent()
 
-            now = datetime.now(timezone.utc).replace(
-                hour=0, minute=0, second=0, microsecond=0)
+            start_of_day = get_start_of_day()
 
-            # Get the start of the day
-            start_of_day = datetime(now.year, now.month, now.day)
-
-            start_of_day_timestamp = int(start_of_day.timestamp())
-            # Query parameters
+            # iterate over all the pages
             params = {
                 "address[city]": self.city_code,
                 "address[district][]": ext_key,
@@ -59,11 +53,9 @@ class City24Parser(BaseParser):
                 "unitType": "Apartment",
                 "itemsPerPage": 50,
                 "page": 1,
-                "datePublished[gte]": start_of_day_timestamp,
-
+                "datePublished[gte]": start_of_day,
             }
 
-            # Headers to mimic a browser request
             headers = {
                 "User-Agent": ua.random,
                 "Accept-Encoding": "gzip, deflate, br, zstd",
@@ -80,8 +72,21 @@ class City24Parser(BaseParser):
                 )
                 return
 
-            flats: List[City24] = response.json()
+            flats: List[City24ResFlatDict] = response.json()
 
             for flat in flats:
                 new_flat = City24_Flat(
-                    "qwe", district_name, self.target_deal_type, flat.main_image.url)
+                    district_name, self.target_deal_type, flat)
+
+                try:
+                    new_flat.create()
+                except Exception as e:
+                    logger.error(f"Error creating flat: {e}")
+                    continue
+
+                # TODO: downoadl image
+                # try:
+                #     new_flat.validate()
+                # except Exception as e:
+                #     continue
+                print(new_flat)

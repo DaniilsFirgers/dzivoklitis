@@ -1,42 +1,32 @@
-from dataclasses import dataclass
-from typing import Optional, TypedDict
+from typing import TypedDict, Optional
 
 
-@dataclass
-class MainImage:
+class MainImageDict(TypedDict):
     url: str
 
 
-@dataclass
-class Street:
-    name: str
-
-
-@dataclass
-class Address:
+class AddressDict(TypedDict, total=False):  # `total=False` makes fields optional
     house_number: Optional[str]
-    street: Street
+    street_name: str
+    district_name: str
 
 
-@dataclass
-class Attributes:
-    HOUSE_TYPE: list[str]
+class AttributesDict(TypedDict, total=False):
+    HOUSE_TYPE: Optional[list[str]]
     FLOOR: int
-    TOTAL_FLOOR: int
+    TOTAL_FLOORS: int
     ON_LAST_FLOOR: bool
 
 
-@dataclass
-class City24:
-    main_image: MainImage
+class City24ResFlatDict(TypedDict, total=False):
+    main_image: MainImageDict
     date_published: str
     latitude: float
     longitude: float
     price: str
+    price_per_unit: float
     property_size: str
-    address: Address
-    district: str
-    city_name: str
+    friendly_id: str
+    address: AddressDict
     room_count: int
-    district_name: str  # like Purvciems, Centrs, etc.
-    attributes: Attributes
+    attributes: AttributesDict

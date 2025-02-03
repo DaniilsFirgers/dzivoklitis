@@ -4,6 +4,8 @@ import re
 from scraper.config import District, Source
 from dataclasses import dataclass, field
 from typing import Optional
+from scraper.schemas.city_24 import City24ResFlatDict
+from scraper.schemas.shared import DealType
 from scraper.utils.meta import try_parse_float, try_parse_int
 import requests
 from PIL import Image
@@ -33,9 +35,6 @@ class Flat():
     latitude: Optional[float] = field(default=None)
     longitude: Optional[float] = field(default=None)
     image_data: Optional[bytes] = field(default=None)
-
-    def __post_init__(self):
-        self.create()
 
     def create(self):
         pass
@@ -125,8 +124,7 @@ class SS_Flat(Flat):
         self.rooms = try_parse_int(self.raw_info[1])
         self.street = self.raw_info[0]
         self.area = try_parse_float(self.raw_info[2])
-        floors = self.parse_floors(self.raw_info[3])
-        self.floor, self.floors_total = floors
+        self.floor, self.floors_total = self.parse_floors(self.raw_info[3])
         self.series = self.raw_info[4]
         self.id = self.create_id()
 
@@ -141,7 +139,7 @@ class SS_Flat(Flat):
         except Exception:
             return None, None
 
-    def load_img(self):
+    def download_img(self):
         if self.img_url is None:
             return
         response = requests.get(self.img_url)
@@ -161,10 +159,37 @@ class SS_Flat(Flat):
 
 
 class City24_Flat(Flat):
-    def __init__(self, url: str, district_name: str,  deal_type: str, img_url: str | None):
+    def __init__(self,  district_name: str,  deal_type: str, flat: City24ResFlatDict):
+        url = self.format_url(flat["friendly_id"])
         super().__init__(url=url, district=district_name,
                          source=Source.CITY_24, deal_type=deal_type)
-        self.img_url = img_url
+        self.flat = flat
 
     def create(self):
-        pass
+        self.price_per_m2 = self.flat["price_per_unit"]
+        self.area = try_parse_float(self.flat["property_size"])
+        self.price = try_parse_int((self.price_per_m2 * self.area))
+        self.rooms = self.flat["room_count"]
+        self.street = f'{self.flat["address"]["street_name"]} {self.flat["address"]["house_number"]}'
+        self.floor = self.flat["attributes"]["FLOOR"]
+        self.floors_total = self.flat["attributes"]["TOTAL_FLOORS"]
+        self.series = self.get_house_type()
+        self.img_url = self.format_img_url(self.flat["main_image"]["url"])
+        self.id = self.create_id()
+        self.add_coordinates(Coordinates(
+            latitude=self.flat["latitude"], longitude=self.flat["longitude"]))
+
+    def get_house_type(self) -> str:
+        if self.flat["attributes"].get("HOUSE_TYPE") is not None and len(self.flat["attributes"]["HOUSE_TYPE"]) > 0:
+            return self.flat["attributes"]["HOUSE_TYPE"][0]
+        return "Unknown"
+
+    def format_img_url(self, url: str) -> str:
+        return url.replace("{fmt:em}", "14")
+
+    def format_url(self, id: str) -> str:
+        # curently it is only Riga, but i want to make it universal
+        if self.deal_type == DealType.RENT:
+            return f"https://www.city24.lv/real-estate/apartments-for-rent/riga/{id}"
+
+        return f"https://www.city24.lv/real-estate/apartments-for-sale/riga/{id}"
