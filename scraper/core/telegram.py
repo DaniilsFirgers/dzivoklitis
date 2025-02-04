@@ -111,16 +111,17 @@ class TelegramBot:
             return self.bot.send_message(
                 chat_id=self.user_id,
                 text=msg_txt,
-                parse_mode="Markdown",
+                parse_mode="HTML",
                 reply_markup=markup
             )
+
         image_file = io.BytesIO(flat.image_data)
         image_file.name = f"{flat.id}.jpg"
         self.bot.send_photo(
             chat_id=self.user_id,
             photo=image_file,
             caption=msg_txt,
-            parse_mode="Markdown",
+            parse_mode="HTML",
             reply_markup=markup
         )
 
@@ -128,15 +129,15 @@ class TelegramBot:
 
     def flat_to_msg(self, flat: Flat, counter: int = None) -> str:
         base_msg = (
-            f"*Source*: {flat.source.value}\n"
-            f"*District*: {flat.district}\n"
-            f"*Street*: {flat.street}\n"
-            f"*Series*: {flat.series}\n"
-            f"*Rooms*: {flat.rooms}\n"
-            f"*M2*: {flat.area}\n"
-            f"*Floor*: {flat.floor}/{flat.floors_total}\n"
-            f"*Price per m2*: {flat.price}\n"
-            f"*Full price*: {flat.price}\n"
+            f"<b>Source</b>: {flat.source.value}\n"
+            f"<b>District</b>: {flat.district}\n"
+            f"<b>Street</b>: {flat.street}\n"
+            f"<b>Series</b>: {flat.series}\n"
+            f"<b>Rooms</b>: {flat.rooms}\n"
+            f"<b>M2</b>: {flat.area}\n"
+            f"<b>Floor</b>: {flat.floor}/{flat.floors_total}\n"
+            f"<b>Price per m2</b>: {flat.price_per_m2}\n"
+            f"<b>Full price</b>: {flat.price}\n"
         )
 
         return f"*Index*: {counter}\n" + base_msg if counter is not None else base_msg
