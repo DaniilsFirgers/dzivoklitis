@@ -5,17 +5,11 @@ from scraper.config import District, Source
 from dataclasses import dataclass, field
 from typing import Optional
 from scraper.schemas.city_24 import City24ResFlatDict
-from scraper.schemas.shared import DealType
-from scraper.utils.meta import try_parse_float, try_parse_int
+from scraper.schemas.shared import Coordinates, DealType
+from scraper.utils.meta import get_coordinates, try_parse_float, try_parse_int
 import requests
 from PIL import Image
 from fake_useragent import UserAgent
-
-
-@dataclass
-class Coordinates:
-    latitude: float
-    longitude: float
 
 
 @dataclass
@@ -135,13 +129,12 @@ class Flat():
 
 
 class SS_Flat(Flat):
-    def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: str, img_url: str | None):
+    def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: str):
         super().__init__(url=url, district=district_name,
                          source=Source.SS, deal_type=deal_type)
         self.raw_info = raw_info
-        self.img_url = img_url
 
-    def create(self):
+    def create(self, img_url: str):
         if len(self.raw_info) != 7:
             raise ValueError("Incorrect number of elements in raw_info")
         self.price = try_parse_int(
@@ -154,7 +147,12 @@ class SS_Flat(Flat):
         self.floor, self.floors_total = self.parse_floors(self.raw_info[3])
         self.series = self.raw_info[4]
         self.id = self.create_id()
-        self.image_data = self.download_img(self.img_url)
+        self.image_data = self.download_img(img_url)
+        # TODO: pass city name
+        coordinates = get_coordinates(
+            "Riga", self.street)
+        if coordinates is not None:
+            self.add_coordinates(coordinates)
 
     def parse_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
         try:
@@ -174,7 +172,6 @@ class City24_Flat(Flat):
         super().__init__(url=url, district=district_name,
                          source=Source.CITY_24, deal_type=deal_type)
         self.flat = flat
-        self.img_url = None
 
     def create(self):
         self.price_per_m2 = self.flat["price_per_unit"]
@@ -185,11 +182,11 @@ class City24_Flat(Flat):
         self.floor = self.flat["attributes"]["FLOOR"]
         self.floors_total = self.flat["attributes"]["TOTAL_FLOORS"]
         self.series = self.get_house_type()
-        self.img_url = self.format_img_url(self.flat["main_image"]["url"])
+        img_url = self.format_img_url(self.flat["main_image"]["url"])
         self.id = self.create_id()
         self.add_coordinates(Coordinates(
             latitude=self.flat["latitude"], longitude=self.flat["longitude"]))
-        self.image_data = self.download_img(self.img_url)
+        self.image_data = self.download_img(img_url)
 
     def get_house_type(self) -> str:
         if self.flat["attributes"].get("HOUSE_TYPE") is not None and len(self.flat["attributes"]["HOUSE_TYPE"]) > 0:
