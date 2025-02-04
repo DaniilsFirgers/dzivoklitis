@@ -43,7 +43,7 @@ class SSParser(BaseParser):
             platform_deal_type = next((k for k, v in self.deal_types.items()
                                        if v == self.target_deal_type), None)
 
-            pages_url = f"https://www.ss.lv/en/real-estate/flats/{self.city_name.lower()}/{ext_key}/{self.look_back_arg}/{platform_deal_type}/"
+            pages_url = f"https://www.ss.lv/lv/real-estate/flats/{self.city_name.lower()}/{ext_key}/{self.look_back_arg}/{platform_deal_type}/"
             response = requests.get(pages_url)
             bs = BeautifulSoup(response.text, "html.parser")
             all_pages: ResultSet[Tag] = bs.find_all(name="a", class_="navi")
@@ -110,9 +110,6 @@ class SSParser(BaseParser):
 
                     if coordinates is not None:
                         flat.add_coordinates(coordinates)
-
-                    if img_url is not None:
-                        flat.download_img()
 
                     try:
                         self.postgres.add_or_update(flat)
