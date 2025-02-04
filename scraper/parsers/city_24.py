@@ -4,7 +4,7 @@ from typing import List
 from fake_useragent import UserAgent
 import requests
 from scraper.config import City24ParserConfig, District, Source
-from scraper.core.postgres import Postgres
+from scraper.core.postgres import Postgres, Type
 from scraper.flat import City24_Flat
 from scraper.parsers.base import BaseParser
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -24,15 +24,17 @@ class City24Parser(BaseParser):
         self.telegram_bot = telegram_bot
         self.postgres = postgres
         self.preferred_districts = preferred_districts
+        self.user_agent = UserAgent()
 
     def scrape(self) -> None:
         """Scrape flats from City24.lv
         \n Args:
             districts (Dict[str, str]): A dictionary of districts with their external keys and names.
         """
+
         for ext_key, district_name in self.districts.items():
             district_info = next(
-                (district for district in self.preferred_districts if district.name == district.name), None)
+                (district for district in self.preferred_districts if district.name == district_name), None)
             if district_info is None:
                 continue
             # currently we are interested only in a specific deal type (get platform specific deal type by reverse lookup)
@@ -41,7 +43,6 @@ class City24Parser(BaseParser):
 
             # URL for the API
             url = "https://api.city24.lv/lv_LV/search/realties"
-            ua = UserAgent()
 
             start_of_day = get_start_of_day()
 
@@ -57,7 +58,7 @@ class City24Parser(BaseParser):
             }
 
             headers = {
-                "User-Agent": ua.random,
+                "User-Agent": self.user_agent.random,
                 "Accept-Encoding": "gzip, deflate, br, zstd",
                 "Accept-Language": "en-US,en;q=0.9",
             }
@@ -70,7 +71,7 @@ class City24Parser(BaseParser):
                 logger.error(
                     f"Request failed with status code {response.status_code}"
                 )
-                return
+                continue
 
             flats: List[City24ResFlatDict] = response.json()
 
@@ -83,10 +84,9 @@ class City24Parser(BaseParser):
                 except Exception as e:
                     logger.error(f"Error creating flat: {e}")
                     continue
+                try:
+                    new_flat.validate(district_info)
+                except Exception as e:
+                    continue
 
-                # TODO: downoadl image
-                # try:
-                #     new_flat.validate()
-                # except Exception as e:
-                #     continue
-                print(new_flat)
+                self.telegram_bot.send_flat_message(new_flat, Type.FLATS)
