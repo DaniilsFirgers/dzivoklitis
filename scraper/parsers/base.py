@@ -2,7 +2,7 @@ import json
 from typing import Dict
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from scraper.config import DealTypes, Districts, Settings, Source
+from scraper.config import PlatformMapping, Settings, Source
 from scraper.utils.logger import logger
 
 
@@ -13,9 +13,10 @@ class BaseParser:
         self.target_deal_type = target_deal_type
         self.districts = {}
         self.deal_types = {}
+        self.flat_series = {}
 
     def run(self):
-        self.districts, self.deal_types = self.get_settings()
+        self.districts, self.deal_types, self.flat_series = self.get_settings()
         self.scrape()
         self.scheduler.add_job(
             self.scrape, "cron", hour="9,12,15,18,21", minute=0)
@@ -28,53 +29,38 @@ class BaseParser:
         with open("/app/settings.json", "r", encoding="utf-8") as file:
             data = json.load(file)
 
-        settings = Settings(districts=Districts(
-            **data["districts"]), deal_types=DealTypes(**data["deal_types"]))
+        settings = Settings(districts=PlatformMapping(**data["districts"]),
+                            deal_types=PlatformMapping(**data["deal_types"]),
+                            flat_series=PlatformMapping(**data["flat_series"]))
 
-        districts_source_map = {
-            Source.SS: settings.districts.ss,
-            Source.CITY_24: settings.districts.city24
-        }
+        districts = self._get_dict(
+            self.source, settings.districts, "districts")
+        deal_types = self._get_dict(
+            self.source, settings.deal_types, "deal_types")
+        flat_series = self._get_dict(
+            self.source, settings.flat_series, "flat_series")
 
-        deal_types_source_map = {
-            Source.SS: settings.deal_types.ss,
-            Source.CITY_24: settings.deal_types.city24
-        }
+        return (districts, deal_types, flat_series)
 
-        if self.source not in districts_source_map:
-            raise NotImplementedError(f"Source {self.source} not supported")
+    def _get_dict(self, source: Source, platform_mapping: PlatformMapping, dict_name: str) -> Dict[str, str]:
+        external_map: Dict[str, str] = getattr(platform_mapping, source.value)
+        if external_map is None:
+            raise ValueError(f"{dict_name} for {source} not found")
+        return self._map_dicts(external_map, platform_mapping.reference, dict_name)
 
-        districts = self._map_districts(
-            districts_source_map[self.source], settings.districts.reference)
-        deal_types = self._map_deal_types(
-            deal_types_source_map[self.source], settings.deal_types.reference)
-        return (districts, deal_types)
-
-    def _map_districts(self, external_map: Dict[str, str], reference: Dict[str, str]) -> Dict[str, str]:
-        """Helper function to map external IDs to district names."""
-        mapped_districts = {}
+    def _map_dicts(self, external_map: Dict[str, str], reference: Dict[str, str], dict_name: str) -> Dict[str, str]:
+        """Helper function to map external IDs to internal names."""
+        mapped_dict = {}
 
         for ext_id, internal_id in external_map.items():
-            district_name = reference.get(internal_id)
-            if district_name is None:
-                logger.error(f"District with external id {ext_id} not found")
+            internal_name = reference.get(internal_id)
+            if internal_name is None:
+                logger.error(
+                    f"{dict_name} with external id {ext_id} not found")
                 continue
-            mapped_districts[ext_id] = district_name
+            mapped_dict[ext_id] = internal_name
 
-        return mapped_districts
-
-    def _map_deal_types(self, deal_types: Dict[str, str], reference: Dict[str, str]) -> Dict[str, str]:
-        """Helper function to map external IDs to deal type names."""
-        mapped_deal_types = {}
-
-        for ext_id, internal_id in deal_types.items():
-            deal_type_name = reference.get(internal_id)
-            if deal_type_name is None:
-                logger.error(f"Deal type with external id {ext_id} not found")
-                continue
-            mapped_deal_types[ext_id] = deal_type_name
-
-        return mapped_deal_types
+        return mapped_dict
 
     def scrape(self) -> None:
         raise NotImplementedError
