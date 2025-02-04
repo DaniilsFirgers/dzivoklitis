@@ -60,14 +60,7 @@ class Config:
 ################################ Platform Settings ################################
 
 @dataclass
-class Districts:
-    reference: Dict[str, str]  # [id, name]
-    ss: Dict[str, str]  # [platform_id, id]
-    city24: Dict[str, str]  # [platform_id, id]
-
-
-@dataclass
-class DealTypes:
+class PlatformMapping:
     reference: Dict[str, str]  # [id, name]
     ss: Dict[str, str]  # [platform_id, id]
     city24: Dict[str, str]  # [platform_id, id]
@@ -75,5 +68,6 @@ class DealTypes:
 
 @dataclass()
 class Settings:
-    districts: Districts
-    deal_types: DealTypes
+    districts: PlatformMapping
+    deal_types: PlatformMapping
+    flat_series: PlatformMapping
