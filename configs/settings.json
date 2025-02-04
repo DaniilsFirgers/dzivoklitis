@@ -13,7 +13,61 @@
       "sale": "2"
     }
   },
-  "flat_series": {},
+  "flat_series": {
+    "reference": {
+      "1": "103",
+      "2": "104",
+      "3": "119",
+      "4": "467",
+      "5": "602",
+      "6": "Čehu projekts",
+      "7": "Hruščovka",
+      "8": "Mazģimeņu projekts",
+      "9": "Lietuviešu projekts",
+      "10": "Pirmskara ēka",
+      "11": "Staļinka",
+      "12": "Koka māja",
+      "13": "Brežņevka",
+      "14": "Specprojekts",
+      "15": "Jaunbūve",
+      "16": "Privātmāja",
+      "17": "Renovēta ēka"
+    },
+    "ss": {
+      "103.": "1",
+      "104.": "2",
+      "119.": "3",
+      "467.": "4",
+      "602.": "5",
+      "Čehu pr.": "6",
+      "Hrušč.": "7",
+      "M. ģim.": "8", 
+      "LT proj.": "9",
+      "P. kara": "10",
+      "Staļina": "11",
+      "Specpr.": "14",
+      "Jaun.": "15",
+      "Renov.": "17"
+    },
+    "city24": {
+      "103_series": "1",
+      "104_series": "2",
+      "119_series": "3",
+      "467_series": "4",
+      "602_series": "5",
+      "czech_project": "6",
+      "khrushchev_project": "7",
+      "family_project": "8",
+      "lithuanian_project": "9",
+      "prewar_project": "10",
+      "stalin_project": "11",
+      "brezhnev_project": "13",
+      "french_project": "14",
+      "special_project": "14",
+      "new_project": "15",
+      "renovated": "17"
+    }
+  },
   "districts": {
     "reference": {
       "1": "Āgenskalns",
