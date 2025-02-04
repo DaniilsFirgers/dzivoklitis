@@ -9,6 +9,7 @@ from scraper.schemas.shared import DealType
 from scraper.utils.meta import try_parse_float, try_parse_int
 import requests
 from PIL import Image
+from fake_useragent import UserAgent
 
 
 @dataclass
@@ -56,6 +57,32 @@ class Flat():
             raise ValueError("Last floor is not allowed")
         if (self.floors_total < self.floor):
             raise ValueError("Last floor is lower than the floor")
+
+    def download_img(self, img_url: str) -> bytes:
+        if img_url is None:
+            return
+
+        headers = {
+            "User-Agent":  UserAgent().random,
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        response = requests.get(img_url, headers=headers)
+        if response.status_code != 200:
+            print(
+                f"Failed to download image from {img_url} - {response.status_code}")
+            return
+
+        image_file = io.BytesIO(response.content)
+        image = Image.open(image_file)
+        max_size = (303, 230)
+
+        image.thumbnail(max_size, Image.LANCZOS)  # Maintains aspect ratio
+        resized_image_file = io.BytesIO()
+        image.save(resized_image_file, format="JPEG")
+
+        resized_image_file.seek(0)
+        return resized_image_file.getvalue()
 
     def add_coordinates(self, coordinates: Coordinates):
         self.latitude = coordinates.latitude
@@ -127,6 +154,7 @@ class SS_Flat(Flat):
         self.floor, self.floors_total = self.parse_floors(self.raw_info[3])
         self.series = self.raw_info[4]
         self.id = self.create_id()
+        self.image_data = self.download_img(self.img_url)
 
     def parse_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
         try:
@@ -139,24 +167,6 @@ class SS_Flat(Flat):
         except Exception:
             return None, None
 
-    def download_img(self):
-        if self.img_url is None:
-            return
-        response = requests.get(self.img_url)
-        if response.status_code != 200:
-            return
-
-        image_file = io.BytesIO(response.content)
-        image = Image.open(image_file)
-        max_size = (303, 230)
-
-        image.thumbnail(max_size, Image.LANCZOS)  # Maintains aspect ratio
-        resized_image_file = io.BytesIO()
-        image.save(resized_image_file, format="JPEG")
-
-        resized_image_file.seek(0)
-        self.image_data = resized_image_file.getvalue()
-
 
 class City24_Flat(Flat):
     def __init__(self,  district_name: str,  deal_type: str, flat: City24ResFlatDict):
@@ -164,6 +174,7 @@ class City24_Flat(Flat):
         super().__init__(url=url, district=district_name,
                          source=Source.CITY_24, deal_type=deal_type)
         self.flat = flat
+        self.img_url = None
 
     def create(self):
         self.price_per_m2 = self.flat["price_per_unit"]
@@ -178,11 +189,12 @@ class City24_Flat(Flat):
         self.id = self.create_id()
         self.add_coordinates(Coordinates(
             latitude=self.flat["latitude"], longitude=self.flat["longitude"]))
+        self.image_data = self.download_img(self.img_url)
 
     def get_house_type(self) -> str:
         if self.flat["attributes"].get("HOUSE_TYPE") is not None and len(self.flat["attributes"]["HOUSE_TYPE"]) > 0:
             return self.flat["attributes"]["HOUSE_TYPE"][0]
-        return "Unknown"
+        return "Nezināms"
 
     def format_img_url(self, url: str) -> str:
         return url.replace("{fmt:em}", "14")
