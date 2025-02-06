@@ -50,8 +50,9 @@ class FlatsParser(metaclass=SingletonMeta):
                       self.config.districts, self.config.parsers.ss)
         ss.run()
 
-        city24 = City24Parser(self.scheduler, self.telegram_bot,
+        city24 = City24Parser(self.scheduler, self.telegram_bot, self.postgres,
                               self.config.districts, self.config.parsers.city24)
+        city24.run()
 
         self.scheduler.start()
         for job in self.scheduler.get_jobs():
