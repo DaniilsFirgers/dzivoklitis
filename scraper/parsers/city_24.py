@@ -84,6 +84,10 @@ class City24Parser(BaseParser):
                 except Exception as e:
                     logger.error(f"Error creating flat: {e}")
                     continue
+
+                if self.postgres.exists_with_id_and_price(new_flat.id, new_flat.price):
+                    continue
+
                 try:
                     new_flat.validate(district_info)
                 except Exception as e:
