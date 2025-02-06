@@ -76,7 +76,7 @@ class SSParser(BaseParser):
                     img_url = self.get_image_url(image_urls, i)
 
                     flat = SS_Flat(url, district_name, raw_info,
-                                   self.target_deal_type, img_url)
+                                   self.target_deal_type)
 
                     # Possible options here:
                     # 1. Flat with this id and price is already in the database -> skip
@@ -95,7 +95,7 @@ class SSParser(BaseParser):
                         continue
 
                     try:
-                        flat.create(img_url)
+                        flat.create(img_url, self.flat_series)
                     except Exception as e:
                         continue
 
