@@ -80,13 +80,21 @@ class City24Parser(BaseParser):
                     district_name, self.target_deal_type, flat)
 
                 try:
-                    new_flat.create()
+                    new_flat.create(self.flat_series)
                 except Exception as e:
                     logger.error(f"Error creating flat: {e}")
                     continue
                 try:
                     new_flat.validate(district_info)
                 except Exception as e:
+                    continue
+
+                try:
+                    self.postgres.add_or_update(new_flat)
+                    logger.info(
+                        f"Added {Source.CITY_24.value} flat with id {new_flat.id} in {district_name} to the database")
+                except Exception as e:
+                    logger.error(e)
                     continue
 
                 self.telegram_bot.send_flat_message(new_flat, Type.FLATS)
