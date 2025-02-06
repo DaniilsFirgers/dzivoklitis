@@ -91,12 +91,13 @@ class SSParser(BaseParser):
                     #   c. Flat with the same parameters (price, area, rooms, etc.) does not exist in the database -> add
 
                     # If flat with the same id and price_per_m2 exists in the database, skip it
-                    if self.postgres.exists_with_id_and_price(flat.id, flat.price):
-                        continue
 
                     try:
                         flat.create(img_url, self.flat_series)
                     except Exception as e:
+                        continue
+
+                    if self.postgres.exists_with_id_and_price(flat.id, flat.price):
                         continue
 
                     try:
@@ -107,7 +108,7 @@ class SSParser(BaseParser):
                     try:
                         self.postgres.add_or_update(flat)
                         logger.info(
-                            f"Added flat {flat.id} - {district_name} to the database")
+                            f"Added {Source.SS.value} flat {flat.id} - {district_name} to the database")
                     except Exception as e:
                         logger.error(e)
                         continue
