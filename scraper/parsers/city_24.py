@@ -7,7 +7,7 @@ from scraper.config import City24ParserConfig, District, Source
 from scraper.core.postgres import Postgres, Type
 from scraper.flat import City24_Flat
 from scraper.parsers.base import BaseParser
-from apscheduler.schedulers.background import BackgroundScheduler
+
 from scraper.core.telegram import TelegramBot
 from scraper.schemas.city_24 import City24ResFlatDict
 from scraper.utils.logger import logger
@@ -15,11 +15,10 @@ from scraper.utils.meta import get_start_of_day
 
 
 class City24Parser(BaseParser):
-    def __init__(self, scheduler: BackgroundScheduler, telegram_bot: TelegramBot, postgres: Postgres,
+    def __init__(self, telegram_bot: TelegramBot, postgres: Postgres,
                  preferred_districts: List[District], config: City24ParserConfig
                  ):
-        super().__init__(Source.CITY_24, scheduler,
-                         config.deal_type)
+        super().__init__(Source.CITY_24, config.deal_type)
         self.city_code = config.city_code
         self.telegram_bot = telegram_bot
         self.postgres = postgres
