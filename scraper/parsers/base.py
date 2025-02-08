@@ -1,25 +1,24 @@
 import json
 from typing import Dict
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import asyncio
 
 from scraper.config import PlatformMapping, Settings, Source
 from scraper.utils.logger import logger
 
 
 class BaseParser:
-    def __init__(self, source: Source, scheduler: BackgroundScheduler, target_deal_type: str):
+    def __init__(self, source: Source, target_deal_type: str):
         self.source = source
-        self.scheduler = scheduler
         self.target_deal_type = target_deal_type
         self.districts = {}
         self.deal_types = {}
         self.flat_series = {}
+        self.semaphore = asyncio.Semaphore(10)
 
-    def run(self):
+    async def run(self):
         self.districts, self.deal_types, self.flat_series = self.get_settings()
-        self.scrape()
-        self.scheduler.add_job(
-            self.scrape, "cron", hour="9,12,15,18,21", minute=0)
+        asyncio.create_task(self.scrape())
 
     def get_settings(self) -> tuple[Dict[str, str], Dict[str, str]]:
         """Get the settings from the settings.json file.
@@ -62,5 +61,5 @@ class BaseParser:
 
         return mapped_dict
 
-    def scrape(self) -> None:
+    async def scrape(self) -> None:
         raise NotImplementedError
