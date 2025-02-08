@@ -1,13 +1,15 @@
 import hashlib
 import io
 import re
+
+import aiohttp
 from scraper.config import District, Source
 from dataclasses import dataclass, field
 from typing import Dict, Optional
 from scraper.schemas.city_24 import City24ResFlatDict
 from scraper.schemas.shared import Coordinates, DealType
+from scraper.utils.logger import logger
 from scraper.utils.meta import get_coordinates, try_parse_float, try_parse_int
-import requests
 from PIL import Image
 from fake_useragent import UserAgent
 
@@ -52,31 +54,42 @@ class Flat():
         if (self.floors_total < self.floor):
             raise ValueError("Last floor is lower than the floor")
 
-    def download_img(self, img_url: str) -> bytes:
+    async def download_img(self, img_url: str, session: aiohttp.ClientSession) -> bytes:
         if img_url is None:
-            return
+            return None
 
         headers = {
             "User-Agent":  UserAgent().random,
             "Accept-Encoding": "gzip, deflate, br, zstd",
             "Accept-Language": "en-US,en;q=0.9",
         }
-        response = requests.get(img_url, headers=headers)
-        if response.status_code != 200:
-            print(
-                f"Failed to download image from {img_url} - {response.status_code}")
-            return
 
-        image_file = io.BytesIO(response.content)
-        image = Image.open(image_file)
-        max_size = (303, 230)
+        try:
+            async with session.get(img_url, headers=headers) as response:
+                if response.status != 200:
+                    print(
+                        f"Failed to download image from {img_url} - {response.status}")
+                    return None
 
-        image.thumbnail(max_size, Image.LANCZOS)  # Maintains aspect ratio
-        resized_image_file = io.BytesIO()
-        image.save(resized_image_file, format="JPEG")
+                # Get image content and open it
+                img_data = await response.read()  # Read the image asynchronously
+                image_file = io.BytesIO(img_data)
+                image = Image.open(image_file)
 
-        resized_image_file.seek(0)
-        return resized_image_file.getvalue()
+                # Resize image while maintaining aspect ratio
+                max_size = (303, 230)
+                image.thumbnail(max_size, Image.LANCZOS)
+
+                # Save to BytesIO buffer
+                resized_image_file = io.BytesIO()
+                image.save(resized_image_file, format="JPEG")
+
+                resized_image_file.seek(0)
+                logger.info(f"Downloaded image from {img_url}")
+                return resized_image_file.getvalue()
+        except Exception as e:
+            logger.error(f"Error downloading image: {e}")
+            return None
 
     def add_coordinates(self, coordinates: Coordinates):
         self.latitude = coordinates.latitude
@@ -147,12 +160,6 @@ class SS_Flat(Flat):
         self.floor, self.floors_total = self.parse_floors(self.raw_info[3])
         self.series = unified_flat_series[self.raw_info[4]]
         self.id = self.create_id()
-        self.image_data = self.download_img(img_url)
-        # TODO: pass city name
-        coordinates = get_coordinates(
-            "Riga", self.street)
-        if coordinates is not None:
-            self.add_coordinates(coordinates)
 
     def parse_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
         try:
