@@ -4,12 +4,13 @@ from pathlib import Path
 from scraper.config import Config, District, ParserConfigs, SsParserConfig, City24ParserConfig, TelegramConfig
 from scraper.core.telegram import TelegramBot
 from scraper.core.postgres import Postgres
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import pytz
 from scraper.parsers.city_24 import City24Parser
 from scraper.utils.logger import logger
 from scraper.utils.meta import SingletonMeta
 from scraper.parsers.ss import SSParser
+import asyncio
 
 
 class FlatsParser(metaclass=SingletonMeta):
@@ -18,7 +19,7 @@ class FlatsParser(metaclass=SingletonMeta):
         self.postgres = Postgres()
         self.telegram_bot = TelegramBot(
             self.postgres, self.config.telegram.sleep_time)
-        self.scheduler = BackgroundScheduler()
+        self.scheduler = AsyncIOScheduler()
 
     def load_config(self):
         config_path = Path("/app/config.toml")
@@ -38,21 +39,24 @@ class FlatsParser(metaclass=SingletonMeta):
 
         return Config(telegram=telegram, parsers=parsers, districts=districts, version=data["version"], name=data["name"])
 
-    def run(self):
-        self.telegram_bot.start_polling()
+    async def run(self):
+        asyncio.create_task(self.telegram_bot.start_polling())
         self.scheduler.configure(timezone=pytz.timezone("Europe/Riga"))
         self.postgres.connect()
 
-        self.telegram_bot.send_message(
+        await self.telegram_bot.send_message(
             f"Started *{self.config.name}* scraper v*{self.config.version}*")
 
-        ss = SSParser(self.scheduler, self.telegram_bot, self.postgres,
+        ss = SSParser(self.telegram_bot, self.postgres,
                       self.config.districts, self.config.parsers.ss)
-        ss.run()
 
-        city24 = City24Parser(self.scheduler, self.telegram_bot, self.postgres,
+        city24 = City24Parser(self.telegram_bot, self.postgres,
                               self.config.districts, self.config.parsers.city24)
-        city24.run()
+
+        await asyncio.gather(ss.run())
+
+        self.scheduler.add_job(lambda: asyncio.gather(
+            ss.run()), "cron", hour="9,12,15,18,21", minute=0, name="SS")
 
         self.scheduler.start()
         for job in self.scheduler.get_jobs():
@@ -61,16 +65,16 @@ class FlatsParser(metaclass=SingletonMeta):
 
         try:
             while True:
-                time.sleep(1)
+                await asyncio.sleep(1)
         except KeyboardInterrupt:
             self.cleanup()
 
-    def cleanup(self):
+    async def cleanup(self):
         self.postgres.close()
         self.scheduler.shutdown()
-        self.telegram_bot.send_message("Performed cleanup")
+        await self.telegram_bot.send_message("Performed cleanup")
 
 
 if __name__ == "__main__":
     scraper = FlatsParser()
-    scraper.run()
+    asyncio.run(scraper.run())
