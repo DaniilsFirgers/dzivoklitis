@@ -1,22 +1,24 @@
 import io
 import os
+import asyncio
+
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import BufferedInputFile
 from scraper.core.postgres import Postgres, Type
 from aiogram.filters import Command
 from scraper.flat import Flat
 from scraper.utils.logger import logger
-import asyncio
+from scraper.utils.limiter import RateLimiterQueue
 
 
 class TelegramBot:
-    def __init__(self, postgres: Postgres, sleep: int):
+    def __init__(self, postgres: Postgres, rate_limiter: RateLimiterQueue):
         self.token = os.getenv("TELEGRAM_TOKEN")
         self.user_id = os.getenv("TELEGRAM_USER_ID")
         self.bot = Bot(token=self.token)
         self.dp = Dispatcher()
         self.postgres = postgres
-        self.sleep = sleep
+        self.rate_limiter = rate_limiter
 
         # Register handlers
         self.dp.callback_query.register(
@@ -88,6 +90,10 @@ class TelegramBot:
         #     await self.send_flat_message(flat, Type.FAVOURITES, counter)
 
     async def send_flat_message(self, flat: Flat, type: Type, counter: str = None):
+        """Puts a flat message into the rate limiter queue."""
+        await self.rate_limiter.add_request(lambda: self._send_flat_message(flat, type, counter))
+
+    async def _send_flat_message(self, flat: Flat, type: Type, counter: str = None):
         """Sends a flat's information message to the user."""
         msg_txt = self.flat_to_msg(flat, counter)
 
@@ -130,8 +136,6 @@ class TelegramBot:
                 reply_markup=markup if markup else None
             )
 
-        await asyncio.sleep(self.sleep)
-
     def flat_to_msg(self, flat: Flat, counter: int = None) -> str:
         """Generates the message text for a flat."""
         base_msg = (
@@ -149,10 +153,14 @@ class TelegramBot:
         return f"*Index*: {counter}\n" + base_msg if counter is not None else base_msg
 
     async def start_polling(self):
+        """Start an asyncio task to poll the bot."""
+        await self._start_polling()
+
+    async def _start_polling(self):
         """Starts polling the bot asynchronously."""
         try:
             await self.dp.start_polling(self.bot)
         except Exception as e:
             logger.error(f"Error in bot polling: {e}")
-            await asyncio.sleep(self.sleep)
+            await asyncio.sleep(1)
             await self.start_polling()
