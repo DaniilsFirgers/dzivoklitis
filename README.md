@@ -21,17 +21,18 @@ TODO:
 
 - [ ] Create backup for Postgres data
 - [ ] Free proxies for requests
-- [ ] Async functions
+- [x] Async functions
 - [ ] Rabbit or similar for events
 - [ ] User registration? Do i need UI or go with telegram app?
 - [ ] Notification when price changes detected
-- [ ] Store flat for renting option
-- [ ] Store Riga districts so they are universal
+- [x] Store flat for renting option
+- [x] Store Riga districts so they are universal
 - [ ] Show history of price changes
-- [ ] Add city24.lv scraper
+- [x] Add city24.lv scraper
 - [ ] Add zip.lv scraper
 - [ ] Add mm.lv scraper
 - [ ] Add pp.lv scraper
 - [ ] Add varianti.lv scraper
 - [ ] Projects map
 - [ ] Make scrapers safe
+- [ ] For ss populate locations in another task
