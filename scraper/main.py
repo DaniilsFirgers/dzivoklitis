@@ -1,24 +1,24 @@
-import time
 import toml
+import asyncio
+import pytz
 from pathlib import Path
 from scraper.config import Config, District, ParserConfigs, SsParserConfig, City24ParserConfig, TelegramConfig
 from scraper.core.telegram import TelegramBot
 from scraper.core.postgres import Postgres
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import pytz
 from scraper.parsers.city_24 import City24Parser
 from scraper.utils.logger import logger
 from scraper.utils.meta import SingletonMeta
 from scraper.parsers.ss import SSParser
-import asyncio
+from scraper.utils.limiter import RateLimiterQueue
 
 
 class FlatsParser(metaclass=SingletonMeta):
     def __init__(self):
         self.config = self.load_config()
         self.postgres = Postgres()
-        self.telegram_bot = TelegramBot(
-            self.postgres, self.config.telegram.sleep_time)
+        self.tg_rate_limiter = RateLimiterQueue(rate=30, per=1)
+        self.telegram_bot = TelegramBot(self.postgres, self.tg_rate_limiter)
         self.scheduler = AsyncIOScheduler()
 
     def load_config(self):
@@ -32,7 +32,6 @@ class FlatsParser(metaclass=SingletonMeta):
         parsers = ParserConfigs(
             ss=SsParserConfig(**parsers_data["ss"]),
             city24=City24ParserConfig(**parsers_data["city24"])
-
         )
 
         districts = [District(**district) for district in data["districts"]]
@@ -40,7 +39,10 @@ class FlatsParser(metaclass=SingletonMeta):
         return Config(telegram=telegram, parsers=parsers, districts=districts, version=data["version"], name=data["name"])
 
     async def run(self):
+        self.tg_rate_limiter.start()
+        # TODO: I do not like it
         asyncio.create_task(self.telegram_bot.start_polling())
+
         self.scheduler.configure(timezone=pytz.timezone("Europe/Riga"))
         self.postgres.connect()
 
@@ -50,13 +52,15 @@ class FlatsParser(metaclass=SingletonMeta):
         ss = SSParser(self.telegram_bot, self.postgres,
                       self.config.districts, self.config.parsers.ss)
 
-        city24 = City24Parser(self.telegram_bot, self.postgres,
-                              self.config.districts, self.config.parsers.city24)
+        # city24 = City24Parser(self.telegram_bot, self.postgres,
+        #                       self.config.districts, self.config.parsers.city24)
 
         await asyncio.gather(ss.run())
 
-        self.scheduler.add_job(lambda: asyncio.gather(
-            ss.run()), "cron", hour="9,12,15,18,21", minute=0, name="SS")
+        loop = asyncio.get_running_loop()
+
+        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+            ss.run(), loop), "cron", hour="9,12,15,18,21,22", minute=12, name="SS")
 
         self.scheduler.start()
         for job in self.scheduler.get_jobs():
