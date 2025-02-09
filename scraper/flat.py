@@ -85,7 +85,6 @@ class Flat():
                 image.save(resized_image_file, format="JPEG")
 
                 resized_image_file.seek(0)
-                logger.info(f"Downloaded image from {img_url}")
                 return resized_image_file.getvalue()
         except Exception as e:
             logger.error(f"Error downloading image: {e}")
@@ -147,7 +146,7 @@ class SS_Flat(Flat):
                          source=Source.SS, deal_type=deal_type)
         self.raw_info = raw_info
 
-    def create(self, img_url: str, unified_flat_series: Dict[str, str]):
+    def create(self, unified_flat_series: Dict[str, str]):
         if len(self.raw_info) != 7:
             raise ValueError("Incorrect number of elements in raw_info")
         self.price = try_parse_int(
@@ -155,7 +154,8 @@ class SS_Flat(Flat):
         self.price_per_m2 = try_parse_int(
             re.sub(r"[^\d]", "", self.raw_info[5]))
         self.rooms = try_parse_int(self.raw_info[1])
-        self.street = self.raw_info[0]
+        cleaned_street = re.sub(r'\b[A-Za-z]{1,7}\.\s*', '', self.raw_info[0])
+        self.street = f"{cleaned_street} iela"
         self.area = try_parse_float(self.raw_info[2])
         self.floor, self.floors_total = self.parse_floors(self.raw_info[3])
         self.series = unified_flat_series[self.raw_info[4]]
