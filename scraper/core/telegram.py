@@ -1,133 +1,139 @@
 import io
 import os
-import time
-import telebot
-from telebot import types
-from telebot import types
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.types import BufferedInputFile
 from scraper.core.postgres import Postgres, Type
+from aiogram.filters import Command
 from scraper.flat import Flat
-from threading import Thread
-
 from scraper.utils.logger import logger
+import asyncio
 
 
 class TelegramBot:
     def __init__(self, postgres: Postgres, sleep: int):
         self.token = os.getenv("TELEGRAM_TOKEN")
         self.user_id = os.getenv("TELEGRAM_USER_ID")
-        self.bot = telebot.TeleBot(self.token, threaded=True)
+        self.bot = Bot(token=self.token)
+        self.dp = Dispatcher()
         self.postgres = postgres
         self.sleep = sleep
 
-        self.bot.callback_query_handler(func=lambda call: call.data.startswith(
-            "add_to_favorites:"))(self.handle_add_to_favorites)
-        self.bot.callback_query_handler(func=lambda call: call.data.startswith(
-            "remove_from_favorites:"))(self.handle_remove_from_favorites)
-        self.bot.message_handler(commands=["favorites"])(self.send_favorites)
-        self.bot.message_handler(commands=["start"])(self.start)
+        # Register handlers
+        self.dp.callback_query.register(
+            self.handle_add_to_favorites, F.data.startswith("add_to_favorites:"))
+        self.dp.callback_query.register(
+            self.handle_remove_from_favorites,  F.data.startswith("remove_from_favorites:"))
+        self.dp.message.register(
+            self.send_favorites, Command("favorites"))
+        self.dp.message.register(self.handle_start, Command("start"))
 
-    def start_polling(self):
-        polling_thread = Thread(target=self._start_polling, daemon=True)
-        polling_thread.start()
+    async def handle_start(self, message: types.Message):
+        """Handles the /start command."""
+        await self.bot.send_message(message.chat.id, "Hello! I'm a bot that helps with flats!")
 
-    def start(self):
-        self.bot.send_message(
+    async def start(self):
+        """Starts the bot and sends an initial message."""
+        await self.bot.send_message(
             self.user_id,
-            "Hello! I'm a bot that will help you find flats."
+            "Hello! I'm a bot that will help you find flats.\n"
             "You can use the following commands:\n"
             "/favorites - to see your favorite flats\n"
         )
 
-    def handle_add_to_favorites(self, call: types.CallbackQuery):
+    async def handle_add_to_favorites(self, call: types.CallbackQuery):
+        """Handles adding a flat to favorites."""
         try:
             id = call.data.split(":")[1]
             if self.postgres.exists_with_id(id, Type.FAVOURITES):
-                return self.bot.answer_callback_query(
+                return await self.bot.answer_callback_query(
                     call.id, "Flat already in favorites ❤️"
                 )
             self.postgres.add_to_favourites(id)
             logger.info(f"Added a flat with id {id} to favourites.")
-
-            self.bot.answer_callback_query(
-                call.id, "Flat added to favorites ❤️"
-            )
+            await self.bot.answer_callback_query(call.id, "Flat added to favorites ❤️")
         except Exception as e:
             logger.error(e)
-            self.bot.answer_callback_query(
-                call.id, "Error adding a flat to favorites 😢"
-            )
+            await self.bot.answer_callback_query(call.id, "Error adding a flat to favorites 😢")
 
-    def handle_remove_from_favorites(self, call: types.CallbackQuery):
+    async def handle_remove_from_favorites(self, call: types.CallbackQuery):
+        """Handles removing a flat from favorites."""
         try:
             id = call.data.split(":")[1]
             self.postgres.delete(id, Type.FAVOURITES)
-            self.bot.answer_callback_query(
-                call.id, "Flat removed from favorites 🗑️"
-            )
+            await self.bot.answer_callback_query(call.id, "Flat removed from favorites 🗑️")
         except Exception as e:
             logger.error(f"Error removing a flat from favorites: {e}")
-            self.bot.answer_callback_query(
-                call.id, "Error removing a flat from favorites 😢"
-            )
+            await self.bot.answer_callback_query(call.id, "Error removing a flat from favorites 😢")
 
-    def send_message(self, message: str):
-        self.bot.send_message(
+    async def send_message(self, message: str):
+        """Sends a message to the user."""
+        await self.bot.send_message(
             chat_id=self.user_id,
             text=message,
             parse_mode="Markdown"
         )
 
-    def send_favorites(self, _):
+    async def send_favorites(self, message: types.Message):
+        """Sends the list of favorite flats to the user."""
         favorites = self.postgres.get_favourites()
         if not favorites:
-            return self.bot.send_message(
+            return await self.bot.send_message(
                 chat_id=self.user_id,
                 text="You don't have any favorites yet 😢"
             )
-        for counter, favorite in enumerate(favorites, start=1):
-            flat = Flat.from_sql_row(*favorite)
-            self.send_flat_message(flat, Type.FAVOURITES, counter)
+        await self.send_message("Here are your favorite flats ❤️")
+        # for counter, favorite in enumerate(favorites, start=1):
+        #     print(favorite)
+        #     flat = Flat.from_sql_row(*favorite)
+        #     await self.send_flat_message(flat, Type.FAVOURITES, counter)
 
-    def send_flat_message(self, flat: Flat, type: Type, counter: str = None):
+    async def send_flat_message(self, flat: Flat, type: Type, counter: str = None):
+        """Sends a flat's information message to the user."""
         msg_txt = self.flat_to_msg(flat, counter)
 
-        markup = types.InlineKeyboardMarkup()
-        markup.add(
-            types.InlineKeyboardButton(
-                "🔍 View URL", url=flat.url),
-        )
+        inline_keyboard = [
+            [
+                types.InlineKeyboardButton(text="🔍 View URL", url=flat.url)
+            ]
+        ]
+
         if type == Type.FAVOURITES:
-            markup.add(
-                types.InlineKeyboardButton(
-                    "🗑️ Delete", callback_data=f"remove_from_favorites:{flat.id}"),
+            inline_keyboard.append(
+                [types.InlineKeyboardButton(
+                    text="🗑️ Delete", callback_data=f"remove_from_favorites:{flat.id}")]
             )
         else:
-            markup.add(
-                types.InlineKeyboardButton(
-                    "❤️ Add to Favorites", callback_data=f"add_to_favorites:{flat.id}"),
+            inline_keyboard.append(
+                [types.InlineKeyboardButton(
+                    text="❤️ Add to Favorites", callback_data=f"add_to_favorites:{flat.id}")]
+
             )
+        markup = types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
         if flat.image_data is None:
-            return self.bot.send_message(
+            await self.bot.send_message(
                 chat_id=self.user_id,
                 text=msg_txt,
                 parse_mode="HTML",
-                reply_markup=markup
+                reply_markup=markup if markup else None
+            )
+        else:
+            image_file = io.BytesIO(flat.image_data)
+            image_file.seek(0)
+            photo = BufferedInputFile(
+                image_file.read(), filename=f"{flat.id}.jpg")
+            await self.bot.send_photo(
+                chat_id=self.user_id,
+                photo=photo,
+                caption=msg_txt,
+                parse_mode="HTML",
+                reply_markup=markup if markup else None
             )
 
-        image_file = io.BytesIO(flat.image_data)
-        image_file.name = f"{flat.id}.jpg"
-        self.bot.send_photo(
-            chat_id=self.user_id,
-            photo=image_file,
-            caption=msg_txt,
-            parse_mode="HTML",
-            reply_markup=markup
-        )
-
-        time.sleep(self.sleep)
+        await asyncio.sleep(self.sleep)
 
     def flat_to_msg(self, flat: Flat, counter: int = None) -> str:
+        """Generates the message text for a flat."""
         base_msg = (
             f"<b>Source</b>: {flat.source.value}\n"
             f"<b>District</b>: {flat.district}\n"
@@ -142,11 +148,11 @@ class TelegramBot:
 
         return f"*Index*: {counter}\n" + base_msg if counter is not None else base_msg
 
-    def _start_polling(self):
-        while True:
-            try:
-                self.bot.polling(none_stop=True)
-            except Exception as e:
-                print(f"Error in bot polling: {e}")
-                time.sleep(self.sleep)
-                continue
+    async def start_polling(self):
+        """Starts polling the bot asynchronously."""
+        try:
+            await self.dp.start_polling(self.bot)
+        except Exception as e:
+            logger.error(f"Error in bot polling: {e}")
+            await asyncio.sleep(self.sleep)
+            await self.start_polling()
