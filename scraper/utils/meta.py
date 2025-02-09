@@ -1,8 +1,10 @@
 
 
+import asyncio
 from datetime import datetime, timezone
-from geopy.geocoders import Nominatim
-import re
+from typing import Optional
+from fake_useragent import UserAgent
+from geopy.geocoders import Photon
 
 from scraper.flat import Coordinates
 from scraper.utils.logger import logger
@@ -43,24 +45,30 @@ def get_start_of_day() -> int:
     return int(start_of_day.timestamp())
 
 
-def get_coordinates(city: str, street: str) -> Coordinates | None:
-    geolocator = Nominatim(user_agent="flats_scraper")
-    # Remove sequences of letters followed by a dot (e.g., "J.", "pr.")
-    # It helps to get better results
-    cleaned_street = re.sub(r'\b[A-Za-z]{1,7}\.\s*', '', street)
+async def async_geocode(geolocator: Photon, full_address: str):
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, geolocator.geocode, full_address)
+
+
+async def get_coordinates(city: str, street: str) -> Optional[Coordinates]:
+    ua = UserAgent()
+    geolocator = Photon(user_agent=ua.random)
+
+    # Prepare the query
+    full_address = f"{street}, {city}, Latvija"
+    print(full_address)
     try:
-        location = geolocator.geocode({
-            "street": cleaned_street,
-            "city": city,
-            "country": "Latvia"
-        })
+        # Call async_geocode which uses the ThreadPoolExecutor
+        location = await async_geocode(geolocator, full_address)
 
         if location is None:
             logger.warning(
                 f"Could not find coordinates for {street} in {city}")
             return None
-
+        logger.info(
+            f"Found coordinates for {street} in {city}: {location.latitude}, {location.longitude}")
         return Coordinates(location.latitude, location.longitude)
+
     except Exception as e:
-        logger.error(e)
+        logger.error(f"Error during geocoding: {e}")
         return None
