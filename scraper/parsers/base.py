@@ -1,6 +1,5 @@
 import json
 from typing import Dict
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import asyncio
 
 from scraper.config import PlatformMapping, Settings, Source
