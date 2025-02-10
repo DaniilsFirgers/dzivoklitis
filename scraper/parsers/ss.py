@@ -24,35 +24,40 @@ class SSParser(BaseParser):
         self.telegram_bot = telegram_bot
         self.postgres = postgres
 
-    async def fetch_page(self, session: aiohttp.ClientSession, url: str) -> str:
-        try:
-            async with session.get(url) as response:
-                return await response.text()
-        except Exception as e:
-            raise e
+    async def fetch_page(self, session: aiohttp.ClientSession, url: str, retries: int = 3, delay: int = 1) -> str:
+        for attempt in range(retries):
+            try:
+                async with session.get(url) as response:
+                    return await response.text()
+            except aiohttp.ClientError as e:
+                logger.info(
+                    f"Failed to fetch page {url} - {e}. Retrying {attempt + 1}/{retries}")
+                if attempt < retries - 1:
+                    await asyncio.sleep(delay)
+                else:
+                    return None
 
-    async def scrape_district(self, session: aiohttp.ClientSession, ext_key: str, district_name: str):
+    async def scrape_district(self, session: aiohttp.ClientSession, platform_district_name: str, internal_district_name: str):
         """Scrape all pages of a given district asynchronously with request limits."""
-        async with self.semaphore:
-            platform_deal_type = next((k for k, v in self.deal_types.items()
-                                       if v == self.target_deal_type), None)
-            base_url = f"https://www.ss.lv/lv/real-estate/flats/{self.city_name.lower()}/{ext_key}/{self.look_back_arg}/{platform_deal_type}/"
+        platform_deal_type = next((k for k, v in self.deal_types.items()
+                                   if v == self.target_deal_type), None)
+        base_url = f"https://www.ss.lv/lv/real-estate/flats/{self.city_name.lower()}/{platform_district_name}/{self.look_back_arg}/{platform_deal_type}/"
 
-            first_page_html = await self.fetch_page(session, base_url)
-            bs = BeautifulSoup(first_page_html, "lxml")
-            all_pages: ResultSet[Tag] = bs.find_all("a", class_="navi")
+        first_page_html = await self.fetch_page(session, base_url)
+        bs = BeautifulSoup(first_page_html, "lxml")
+        all_pages: ResultSet[Tag] = bs.find_all("a", class_="navi")
 
-            pages = [1]
-            pages += [int(page_num.get_text()) for page_num in all_pages[1:-1]]
+        pages = [1]
+        pages += [int(page_num.get_text()) for page_num in all_pages[1:-1]]
 
-            tasks = [asyncio.create_task(self.scrape_page(session, ext_key, district_name, platform_deal_type, page))
-                     for page in pages]
+        tasks = [asyncio.create_task(self.scrape_page(session, platform_district_name, internal_district_name, platform_deal_type, page))
+                 for page in pages]
 
-            await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
 
-    async def scrape_page(self, session: aiohttp.ClientSession, ext_key: str, district_name: str, deal_type: str, page: int):
+    async def scrape_page(self, session: aiohttp.ClientSession, platform_district_name: str, internal_district_name: str, deal_type: str, page: int):
         """Scrape a single page and extract flat details asynchronously."""
-        page_url = f"https://www.ss.lv/real-estate/flats/{self.city_name.lower()}/{ext_key}/{self.look_back_arg}/{deal_type}/page{page}.html"
+        page_url = f"https://www.ss.lv/real-estate/flats/{self.city_name.lower()}/{platform_district_name}/{self.look_back_arg}/{deal_type}/page{page}.html"
         page_html = await self.fetch_page(session, page_url)
 
         bs = BeautifulSoup(page_html, "lxml")
@@ -65,7 +70,7 @@ class SSParser(BaseParser):
             img_url = self.get_image_url(image_urls, index)
             tasks.append(asyncio.create_task(
                 self.process_flat(description, streets,
-                                  img_url, district_name, session)
+                                  img_url, internal_district_name, session)
             ))
 
         await asyncio.gather(*tasks)
@@ -81,7 +86,7 @@ class SSParser(BaseParser):
         except Exception:
             return
 
-        print("flat", flat.id, flat.district, flat.street)
+        print("flat ss", flat.id, flat.district, flat.street)
 
         flat.image_data = await flat.download_img(img_url, session)
 
@@ -108,10 +113,10 @@ class SSParser(BaseParser):
         #     logger.error(e)
 
     async def scrape(self) -> None:
-        connector = aiohttp.TCPConnector(limit_per_host=7)
-        async with aiohttp.ClientSession(connector=connector) as session:
-            tasks = [asyncio.ensure_future(self.scrape_district(session, ext_key, district_name))
-                     for ext_key, district_name in self.districts.items()]
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(
+                limit_per_host=5, keepalive_timeout=40)) as session:
+            tasks = [asyncio.ensure_future(self.scrape_district(session, platform_district_name, internal_district_name))
+                     for platform_district_name, internal_district_name in self.districts.items()]
             await asyncio.gather(*tasks)
 
     def get_image_url(self, image_urls: ResultSet[Tag], i: int) -> str | None:
