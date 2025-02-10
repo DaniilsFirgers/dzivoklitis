@@ -174,7 +174,7 @@ class SS_Flat(Flat):
 
 
 class City24_Flat(Flat):
-    def __init__(self,  district_name: str,  deal_type: str, flat: City24ResFlatDict):
+    def __init__(self, district_name: str,  deal_type: str, flat: City24ResFlatDict):
         url = self.format_url(flat["friendly_id"])
         super().__init__(url=url, district=district_name,
                          source=Source.CITY_24, deal_type=deal_type)
@@ -185,15 +185,18 @@ class City24_Flat(Flat):
         self.area = try_parse_float(self.flat["property_size"])
         self.price = try_parse_int((self.price_per_m2 * self.area))
         self.rooms = self.flat["room_count"]
-        self.street = f'{self.flat["address"]["street_name"]} {self.flat["address"]["house_number"]}'
+        self.street = self.get_street_name()
         self.floor = self.flat["attributes"]["FLOOR"]
         self.floors_total = self.flat["attributes"]["TOTAL_FLOORS"]
         self.series = self.get_series_type(unified_flat_series)
-        img_url = self.format_img_url(self.flat["main_image"]["url"])
         self.id = self.create_id()
         self.add_coordinates(Coordinates(
             latitude=self.flat["latitude"], longitude=self.flat["longitude"]))
-        self.image_data = self.download_img(img_url)
+
+    def get_street_name(self) -> str:
+        if self.flat["address"].get("house_number") is not None:
+            return f'{self.flat["address"]["street_name"]} {self.flat["address"]["house_number"]}'
+        return self.flat["address"]["street_name"]
 
     def get_series_type(self, unified_flat_series: Dict[str, str]) -> str:
         if self.flat["attributes"].get("HOUSE_TYPE") is not None and len(self.flat["attributes"]["HOUSE_TYPE"]) > 0:
