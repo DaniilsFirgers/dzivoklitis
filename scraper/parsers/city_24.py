@@ -1,13 +1,13 @@
 
+import asyncio
 from typing import List
-
+import aiohttp
 from fake_useragent import UserAgent
-import requests
+
 from scraper.config import City24ParserConfig, District, Source
 from scraper.core.postgres import Postgres, Type
 from scraper.flat import City24_Flat
 from scraper.parsers.base import BaseParser
-
 from scraper.core.telegram import TelegramBot
 from scraper.schemas.city_24 import City24ResFlatDict
 from scraper.utils.logger import logger
@@ -24,80 +24,106 @@ class City24Parser(BaseParser):
         self.postgres = postgres
         self.preferred_districts = preferred_districts
         self.user_agent = UserAgent()
+        self.items_per_page = 50
 
-    def scrape(self) -> None:
-        """Scrape flats from City24.lv
-        \n Args:
-            districts (Dict[str, str]): A dictionary of districts with their external keys and names.
-        """
+    async def scrape(self) -> None:
+        """Scrape flats from City24.lv asynchronously"""
+        connector = aiohttp.TCPConnector(
+            limit_per_host=5, keepalive_timeout=30)
+        async with aiohttp.ClientSession(connector=connector) as session:
+            await self.scrape_city(session)
 
-        for ext_key, district_name in self.districts.items():
-            district_info = next(
-                (district for district in self.preferred_districts if district.name == district_name), None)
-            if district_info is None:
-                continue
-            # currently we are interested only in a specific deal type (get platform specific deal type by reverse lookup)
-            platform_deal_type = next((k for k, v in self.deal_types.items()
-                                       if v == self.target_deal_type), None)
-
-            # URL for the API
+    async def scrape_city(self, session: aiohttp.ClientSession):
+        """Scrape the entire city asynchronously, handling pagination."""
+        async with self.semaphore:
+            platform_deal_type = next(
+                (k for k, v in self.deal_types.items() if v == self.target_deal_type), None)
             url = "https://api.city24.lv/lv_LV/search/realties"
-
             start_of_day = get_start_of_day()
+            page = 1
 
-            # iterate over all the pages
-            params = {
-                "address[city]": self.city_code,
-                "address[district][]": ext_key,
-                "tsType":  platform_deal_type,
-                "unitType": "Apartment",
-                "itemsPerPage": 50,
-                "page": 1,
-                "datePublished[gte]": start_of_day,
-            }
+            # 270732 Not found
+            while True:
+                params = {
+                    "address[city]": self.city_code,
+                    "tsType": platform_deal_type,
+                    "unitType": "Apartment",
+                    "itemsPerPage": self.items_per_page,
+                    "page": page,
+                    "datePublished[gte]": 1738145600,
+                }
 
-            headers = {
-                "User-Agent": self.user_agent.random,
-                "Accept-Encoding": "gzip, deflate, br, zstd",
-                "Accept-Language": "en-US,en;q=0.9",
-            }
-
-            # Make the request
-            response = requests.get(
-                url, params=params, headers=headers)
-
-            if response.status_code != 200:
-                logger.error(
-                    f"Request failed with status code {response.status_code}"
-                )
-                continue
-
-            flats: List[City24ResFlatDict] = response.json()
-
-            for flat in flats:
-                new_flat = City24_Flat(
-                    district_name, self.target_deal_type, flat)
+                headers = {
+                    "User-Agent": self.user_agent.random,
+                    "Accept-Encoding": "gzip, deflate, br, zstd",
+                    "Accept-Language": "en-US,en;q=0.9",
+                }
 
                 try:
-                    new_flat.create(self.flat_series)
-                except Exception as e:
-                    logger.error(f"Error creating flat: {e}")
-                    continue
+                    async with session.get(url, params=params, headers=headers, timeout=10) as response:
+                        if response.status != 200:
+                            logger.error(
+                                f"Request failed with status code {response.status}")
+                            return
+                        print("response", response.url)
+                        flats: List[City24ResFlatDict] = await response.json()
 
-                if self.postgres.exists_with_id_and_price(new_flat.id, new_flat.price):
-                    continue
+                        if not flats:
+                            break
 
-                try:
-                    new_flat.validate(district_info)
-                except Exception as e:
-                    continue
+                        for flat in flats:
+                            await self.process_flat(flat, session)
 
-                try:
-                    self.postgres.add_or_update(new_flat)
-                    logger.info(
-                        f"Added {Source.CITY_24.value} flat with id {new_flat.id} in {district_name} to the database")
-                except Exception as e:
-                    logger.error(e)
-                    continue
+                        if len(flats) < self.items_per_page:
+                            break
 
-                self.telegram_bot.send_flat_message(new_flat, Type.FLATS)
+                        page += 1
+
+                except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                    logger.error(
+                        f"Error fetching data for {self.city_code} on page {page}: {e}")
+                    break  # Stop fetching if an error occurs
+
+    async def process_flat(self, flat_data, session: aiohttp.ClientSession):
+        """Process and validate each flat"""
+
+        original_district_id = str(flat_data["address"]["district"]["id"])
+        if original_district_id is None:
+            logger.warning(
+                f"District with external id {original_district_id} not found")
+            return
+
+        district = self.districts.get(original_district_id)
+        if district is None:
+            logger.warning(
+                f"Cannot map district with external id {original_district_id}")
+
+        new_flat = City24_Flat(district, self.target_deal_type, flat_data)
+
+        try:
+            new_flat.create(self.flat_series)
+        except Exception as e:
+            logger.error(f"Error creating flat: {e}")
+            return
+        img_url = new_flat.format_img_url(flat_data["main_image"]["url"])
+        new_flat.image_data = await new_flat.download_img(img_url, session)
+
+        print("flat city24", new_flat.id, new_flat.district, new_flat.street)
+
+        # if self.postgres.exists_with_id_and_price(new_flat.id, new_flat.price):
+        #     return
+
+        # try:
+        #     new_flat.validate(district_info)
+        # except Exception:
+        #     return
+
+        # try:
+        #     self.postgres.add_or_update(new_flat)
+        #     logger.info(
+        #         f"Added {Source.CITY_24.value} flat with id {new_flat.id} in {district_name} to the database")
+        # except Exception as e:
+        #     logger.error(e)
+        #     return
+
+        await self.telegram_bot.send_flat_message(new_flat, Type.FLATS)
