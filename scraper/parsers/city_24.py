@@ -39,7 +39,6 @@ class City24Parser(BaseParser):
             platform_deal_type = next(
                 (k for k, v in self.deal_types.items() if v == self.target_deal_type), None)
             url = "https://api.city24.lv/lv_LV/search/realties"
-            start_of_day = get_start_of_day()
             page = 1
 
             # 270732 Not found
@@ -50,7 +49,7 @@ class City24Parser(BaseParser):
                     "unitType": "Apartment",
                     "itemsPerPage": self.items_per_page,
                     "page": page,
-                    "datePublished[gte]": 1738145600,
+                    "datePublished[gte]": get_start_of_day(),
                 }
 
                 headers = {
@@ -65,7 +64,6 @@ class City24Parser(BaseParser):
                             logger.error(
                                 f"Request failed with status code {response.status}")
                             return
-                        print("response", response.url)
                         flats: List[City24ResFlatDict] = await response.json()
 
                         if not flats:
@@ -86,19 +84,8 @@ class City24Parser(BaseParser):
 
     async def process_flat(self, flat_data, session: aiohttp.ClientSession):
         """Process and validate each flat"""
-
-        original_district_id = str(flat_data["address"]["district"]["id"])
-        if original_district_id is None:
-            logger.warning(
-                f"District with external id {original_district_id} not found")
-            return
-
-        district = self.districts.get(original_district_id)
-        if district is None:
-            logger.warning(
-                f"Cannot map district with external id {original_district_id}")
-
-        new_flat = City24_Flat(district, self.target_deal_type, flat_data)
+        district_name = self.get_district_name(flat_data)
+        new_flat = City24_Flat(district_name, self.target_deal_type, flat_data)
 
         try:
             new_flat.create(self.flat_series)
@@ -107,8 +94,6 @@ class City24Parser(BaseParser):
             return
         img_url = new_flat.format_img_url(flat_data["main_image"]["url"])
         new_flat.image_data = await new_flat.download_img(img_url, session)
-
-        print("flat city24", new_flat.id, new_flat.district, new_flat.street)
 
         # if self.postgres.exists_with_id_and_price(new_flat.id, new_flat.price):
         #     return
@@ -127,3 +112,14 @@ class City24Parser(BaseParser):
         #     return
 
         await self.telegram_bot.send_flat_message(new_flat, Type.FLATS)
+
+    def get_district_name(self, flat_data) -> str:
+        if flat_data["address"]["district"] is None:
+            return "Nezināms"
+        original = str(flat_data["address"]["district"]["id"])
+        district_name = self.districts.get(original)
+        if district_name is None:
+            logger.warning(
+                f"Cannot map district with external id {original}")
+            return "Nezināms"
+        return district_name
