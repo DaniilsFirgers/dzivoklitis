@@ -3,7 +3,7 @@ import asyncio
 import pytz
 from pathlib import Path
 from scraper.config import Config, District, ParserConfigs, SsParserConfig, City24ParserConfig, TelegramConfig
-from scraper.core.telegram import TelegramBot
+from scraper.utils.telegram import TelegramBot
 from scraper.core.postgres import Postgres
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from scraper.parsers.city_24 import City24Parser
@@ -52,15 +52,15 @@ class FlatsParser(metaclass=SingletonMeta):
         ss = SSParser(self.telegram_bot, self.postgres,
                       self.config.districts, self.config.parsers.ss)
 
-        # city24 = City24Parser(self.telegram_bot, self.postgres,
-        #                       self.config.districts, self.config.parsers.city24)
+        city24 = City24Parser(self.telegram_bot, self.postgres,
+                              self.config.districts, self.config.parsers.city24)
 
-        await asyncio.gather(ss.run())
+        await asyncio.gather(city24.run())
 
         loop = asyncio.get_running_loop()
 
-        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            ss.run(), loop), "cron", hour="9,12,15,18,21,22", minute=12, name="SS")
+        # self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+        #     ss.run(), loop), "cron", hour="9,12,15,18,21", minute=12, name="SS")
 
         self.scheduler.start()
         for job in self.scheduler.get_jobs():

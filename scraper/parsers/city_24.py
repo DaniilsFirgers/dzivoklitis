@@ -8,7 +8,7 @@ from scraper.config import City24ParserConfig, District, Source
 from scraper.core.postgres import Postgres, Type
 from scraper.flat import City24_Flat
 from scraper.parsers.base import BaseParser
-from scraper.core.telegram import TelegramBot
+from scraper.utils.telegram import TelegramBot
 from scraper.schemas.city_24 import City24ResFlatDict
 from scraper.utils.logger import logger
 from scraper.utils.meta import get_start_of_day
@@ -41,7 +41,6 @@ class City24Parser(BaseParser):
             url = "https://api.city24.lv/lv_LV/search/realties"
             page = 1
 
-            # 270732 Not found
             while True:
                 params = {
                     "address[city]": self.city_code,
