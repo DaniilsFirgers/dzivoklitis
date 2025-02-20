@@ -6,6 +6,7 @@ from fake_useragent import UserAgent
 
 from scraper.config import City24ParserConfig, District, Source
 from scraper.core.postgres import Postgres, Type
+from scraper.database.crud import flat_exists, upsert_flat
 from scraper.flat import City24_Flat
 from scraper.parsers.base import BaseParser
 from scraper.utils.telegram import TelegramBot
@@ -15,13 +16,12 @@ from scraper.utils.meta import get_start_of_day
 
 
 class City24Parser(BaseParser):
-    def __init__(self, telegram_bot: TelegramBot, postgres: Postgres,
+    def __init__(self, telegram_bot: TelegramBot,
                  preferred_districts: List[District], config: City24ParserConfig
                  ):
         super().__init__(Source.CITY_24, config.deal_type)
         self.city_code = config.city_code
         self.telegram_bot = telegram_bot
-        self.postgres = postgres
         self.preferred_districts = preferred_districts
         self.user_agent = UserAgent()
         self.items_per_page = 50
@@ -84,33 +84,40 @@ class City24Parser(BaseParser):
     async def process_flat(self, flat_data, session: aiohttp.ClientSession):
         """Process and validate each flat"""
         district_name = self.get_district_name(flat_data)
-        new_flat = City24_Flat(district_name, self.target_deal_type, flat_data)
+        flat = City24_Flat(district_name, self.target_deal_type, flat_data)
 
         try:
-            new_flat.create(self.flat_series)
+            flat.create(self.flat_series)
         except Exception as e:
             logger.error(f"Error creating flat: {e}")
             return
-        img_url = new_flat.format_img_url(flat_data["main_image"]["url"])
-        new_flat.image_data = await new_flat.download_img(img_url, session)
+        img_url = flat.format_img_url(flat_data["main_image"]["url"])
+        flat.image_data = await flat.download_img(img_url, session)
 
-        # if self.postgres.exists_with_id_and_price(new_flat.id, new_flat.price):
-        #     return
+        try:
+            if await flat_exists(flat.id, flat.price):
+                return
+        except Exception as e:
+            logger.error(e)
+            return
 
-        # try:
-        #     new_flat.validate(district_info)
-        # except Exception:
-        #     return
+        #  TODO: check if correct
+        try:
+            district_info = next(
+                (district for district in self.preferred_districts if district.name == district_name), None)
+            if district_info:
+                flat.validate(district_info)
+        except ValueError:
+            return
 
-        # try:
-        #     self.postgres.add_or_update(new_flat)
-        #     logger.info(
-        #         f"Added {Source.CITY_24.value} flat with id {new_flat.id} in {district_name} to the database")
-        # except Exception as e:
-        #     logger.error(e)
-        #     return
+        try:
+            flat_orm = flat.to_orm()
+            await upsert_flat(flat_orm, flat.price)
+        except Exception as e:
+            logger.error(e)
+            return
 
-        await self.telegram_bot.send_flat_message(new_flat, Type.FLATS)
+        await self.telegram_bot.send_flat_message(flat, Type.FLATS)
 
     def get_district_name(self, flat_data) -> str:
         if flat_data["address"]["district"] is None:
