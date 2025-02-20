@@ -4,8 +4,9 @@ from typing import List
 from bs4 import BeautifulSoup, ResultSet, Tag
 
 from scraper.config import District, Source, SsParserConfig
-from scraper.core.postgres import Postgres, Type
-from scraper.core.telegram import TelegramBot
+from scraper.database.models import Type
+from scraper.database.crud import flat_exists, upsert_flat
+from scraper.utils.telegram import TelegramBot
 from scraper.flat import SS_Flat
 from scraper.parsers.base import BaseParser
 from scraper.utils.logger import logger
@@ -13,16 +14,13 @@ from scraper.utils.meta import get_coordinates
 
 
 class SSParser(BaseParser):
-    def __init__(self, telegram_bot: TelegramBot, postgres: Postgres,
-                 preferred_districts: List[District], config: SsParserConfig
-                 ):
+    def __init__(self, telegram_bot: TelegramBot, preferred_districts: List[District], config: SsParserConfig):
 
         super().__init__(Source.SS, config.deal_type)
         self.city_name = config.city_name
         self.preferred_districts = preferred_districts
         self.look_back_arg = config.timeframe
         self.telegram_bot = telegram_bot
-        self.postgres = postgres
 
     async def fetch_page(self, session: aiohttp.ClientSession, url: str, retries: int = 3, delay: int = 1) -> str:
         for attempt in range(retries):
@@ -41,11 +39,12 @@ class SSParser(BaseParser):
         """Scrape all pages of a given district asynchronously with request limits."""
         platform_deal_type = next((k for k, v in self.deal_types.items()
                                    if v == self.target_deal_type), None)
-        base_url = f"https://www.ss.lv/lv/real-estate/flats/{self.city_name.lower()}/{platform_district_name}/{self.look_back_arg}/{platform_deal_type}/"
+        base_url = f"https://www.ss.lv/real-estate/flats/{self.city_name.lower()}/{platform_district_name}/{self.look_back_arg}/{platform_deal_type}/"
 
         first_page_html = await self.fetch_page(session, base_url)
         bs = BeautifulSoup(first_page_html, "lxml")
-        all_pages: ResultSet[Tag] = bs.find_all("a", class_="navi")
+        all_pages: ResultSet[Tag] = bs.find_all(
+            "a", class_="navi")
 
         pages = [1]
         pages += [int(page_num.get_text()) for page_num in all_pages[1:-1]]
@@ -86,15 +85,17 @@ class SSParser(BaseParser):
         except Exception:
             return
 
-        print("flat ss", flat.id, flat.district, flat.street)
+        logger.warning(f"Processing flat {flat.id}")
 
         flat.image_data = await flat.download_img(img_url, session)
 
-        await self.telegram_bot.send_flat_message(flat, Type.FLATS)
-
         # flat.add_coordinates(await get_coordinates(flat.street, self.city_name))
 
-        # if self.postgres.exists_with_id_and_price(flat.id, flat.price):
+        # try:
+        #     if await flat_exists(flat.id, flat.price):
+        #         return
+        # except Exception as e:
+        #     logger.error(e)
         #     return
 
         # try:
@@ -106,11 +107,13 @@ class SSParser(BaseParser):
         #     return
 
         # try:
-        #     self.postgres.add_or_update(flat)
-        #     logger.info(
-        #         f"Added {Source.SS.value} flat {flat.id} - {district_name} to the database")
+        #     flat_orm = flat.to_orm()
+        #     await upsert_flat(flat_orm, flat.price)
         # except Exception as e:
         #     logger.error(e)
+        #     return
+
+        await self.telegram_bot.send_flat_message(flat, Type.FLATS)
 
     async def scrape(self) -> None:
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(
