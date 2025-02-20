@@ -120,10 +120,8 @@ class TelegramBot:
                 reply_markup=markup if markup else None
             )
         else:
-            image_file = io.BytesIO(flat.image_data)
-            image_file.seek(0)
             photo = BufferedInputFile(
-                image_file.read(), filename=f"{flat.id}.jpg")
+                flat.image_data, filename=f"{flat.id}.jpg")
             await self.bot.send_photo(
                 chat_id=self.user_id,
                 photo=photo,
