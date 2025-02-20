@@ -17,7 +17,7 @@ from scraper.database.postgres import postgres_instance
 class FlatsParser(metaclass=SingletonMeta):
     def __init__(self):
         self.config = self.load_config()
-        self.tg_rate_limiter = RateLimiterQueue(rate=30, per=1)
+        self.tg_rate_limiter = RateLimiterQueue(rate=30, per=1, buffer=0.2)
         self.telegram_bot = TelegramBot(self.tg_rate_limiter)
         self.scheduler = AsyncIOScheduler()
 
