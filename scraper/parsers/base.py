@@ -13,7 +13,7 @@ class BaseParser:
         self.districts = {}
         self.deal_types = {}
         self.flat_series = {}
-        self.semaphore = asyncio.Semaphore(10)
+        self.semaphore = asyncio.Semaphore(15)
 
     async def run(self):
         self.districts, self.deal_types, self.flat_series = self.get_settings()
