@@ -12,6 +12,7 @@ from scraper.utils.logger import logger
 from scraper.utils.meta import get_coordinates, try_parse_float, try_parse_int
 from PIL import Image
 from fake_useragent import UserAgent
+from scraper.database.models import Flat as FlatORM
 
 
 @dataclass
@@ -19,19 +20,19 @@ class Flat():
     url: str
     district: str
     source: Source
-    deal_type: str = field(default=None)
-    id: str = field(default=None)
-    price: Optional[int] = field(default=None)
-    rooms: Optional[int] = field(default=None)
-    street: Optional[str] = field(default=None)
-    area: Optional[float] = field(default=None)
-    floor: Optional[int] = field(default=None)
-    floors_total: Optional[int] = field(default=None)
-    series: Optional[str] = field(default=None)
-    price_per_m2: Optional[int] = field(default=None)
-    latitude: Optional[float] = field(default=None)
-    longitude: Optional[float] = field(default=None)
-    image_data: Optional[bytes] = field(default=None)
+    deal_type: str
+    id: Optional[str] = None
+    price: Optional[int] = None
+    rooms: Optional[int] = None
+    street: Optional[str] = None
+    area: Optional[float] = None
+    floor: Optional[int] = None
+    floors_total: Optional[int] = None
+    series: Optional[str] = None
+    price_per_m2: Optional[int] = None
+    latitude: Optional[float] = 0
+    longitude: Optional[float] = 0
+    image_data: Optional[bytes] = b""
 
     def create(self):
         pass
@@ -111,32 +112,22 @@ class Flat():
         return hashlib.md5(
             f"{self.source.value}-{self.deal_type}-{self.district}-{self.street}-{self.series}-{self.rooms}-{self.area}-{self.floor}-{self.floors_total}".encode()).hexdigest()
 
-    @classmethod
-    def from_sql_row(cls, *row):
-        """
-        Creates a Flat object from an SQL row.
-        Maps row values to class attributes in order.
-        """
-        if (len(row) != 14):
-            raise ValueError("Incorrect number of elements in row")
+    def to_orm(self) -> FlatORM:
+        return FlatORM(
+            flat_id=self.id,
+            source=self.source.value,
+            deal_type=self.deal_type,
+            url=self.url,
+            district=self.district,
+            street=self.street,
+            rooms=self.rooms,
+            floors_total=self.floors_total,
+            floor=self.floor,
+            area=self.area,
+            series=self.series,
+            location=f"POINT({self.longitude} {self.latitude})",
+            image_data=self.image_data,
 
-        return cls(
-            id=row[0],
-            source=row[1],
-            deal_type=row[2],
-            url=row[3],
-            district=row[4],
-            street=row[5],
-            rooms=row[6],
-            floors_total=row[7],
-            floor=row[8],
-            area=row[9],
-            series=row[10],
-            price=row[14],
-            price_per_m2=int(row[14] / row[9]),
-            latitude=row[11],
-            longitude=row[12],
-            image_data=row[13]
         )
 
 
