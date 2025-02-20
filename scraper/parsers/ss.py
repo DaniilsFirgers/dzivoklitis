@@ -21,6 +21,7 @@ class SSParser(BaseParser):
         self.preferred_districts = preferred_districts
         self.look_back_arg = config.timeframe
         self.telegram_bot = telegram_bot
+        self.semaphore = asyncio.Semaphore(20)
 
     async def fetch_page(self, session: aiohttp.ClientSession, url: str, retries: int = 3, delay: int = 1) -> str:
         for attempt in range(retries):
@@ -41,7 +42,9 @@ class SSParser(BaseParser):
                                    if v == self.target_deal_type), None)
         base_url = f"https://www.ss.lv/real-estate/flats/{self.city_name.lower()}/{platform_district_name}/{self.look_back_arg}/{platform_deal_type}/"
 
-        first_page_html = await self.fetch_page(session, base_url)
+        async with self.semaphore:
+            first_page_html = await self.fetch_page(session, base_url)
+
         bs = BeautifulSoup(first_page_html, "lxml")
         all_pages: ResultSet[Tag] = bs.find_all(
             "a", class_="navi")
@@ -57,7 +60,9 @@ class SSParser(BaseParser):
     async def scrape_page(self, session: aiohttp.ClientSession, platform_district_name: str, internal_district_name: str, deal_type: str, page: int):
         """Scrape a single page and extract flat details asynchronously."""
         page_url = f"https://www.ss.lv/real-estate/flats/{self.city_name.lower()}/{platform_district_name}/{self.look_back_arg}/{deal_type}/page{page}.html"
-        page_html = await self.fetch_page(session, page_url)
+
+        async with self.semaphore:
+            page_html = await self.fetch_page(session, page_url)
 
         bs = BeautifulSoup(page_html, "lxml")
         descriptions = bs.select("a.am")
@@ -85,18 +90,17 @@ class SSParser(BaseParser):
         except Exception:
             return
 
-        logger.warning(f"Processing flat {flat.id}")
-
         flat.image_data = await flat.download_img(img_url, session)
 
         # flat.add_coordinates(await get_coordinates(flat.street, self.city_name))
 
-        # try:
-        #     if await flat_exists(flat.id, flat.price):
-        #         return
-        # except Exception as e:
-        #     logger.error(e)
-        #     return
+        try:
+            already_in_db = await flat_exists(flat.id, flat.price)
+            if already_in_db:
+                return
+        except Exception as e:
+            logger.error(e)
+            return
 
         # try:
         #     district_info = next(
@@ -106,18 +110,20 @@ class SSParser(BaseParser):
         # except ValueError:
         #     return
 
-        # try:
-        #     flat_orm = flat.to_orm()
-        #     await upsert_flat(flat_orm, flat.price)
-        # except Exception as e:
-        #     logger.error(e)
-        #     return
+        try:
+            flat_orm = flat.to_orm()
+            await upsert_flat(flat_orm, flat.price)
+        except Exception as e:
+            logger.error(e)
+            return
 
         await self.telegram_bot.send_flat_message(flat, Type.FLATS)
 
+        logger.warning(f"Processing flat {flat.id}")
+
     async def scrape(self) -> None:
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(
-                limit_per_host=5, keepalive_timeout=40)) as session:
+                limit_per_host=10, keepalive_timeout=40)) as session:
             tasks = [asyncio.ensure_future(self.scrape_district(session, platform_district_name, internal_district_name))
                      for platform_district_name, internal_district_name in self.districts.items()]
             await asyncio.gather(*tasks)
