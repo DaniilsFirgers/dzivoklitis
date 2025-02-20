@@ -11,14 +11,14 @@ from scraper.utils.logger import logger
 from scraper.utils.meta import SingletonMeta
 from scraper.parsers.ss import SSParser
 from scraper.utils.limiter import RateLimiterQueue
+from scraper.database.postgres import postgres_instance
 
 
 class FlatsParser(metaclass=SingletonMeta):
     def __init__(self):
         self.config = self.load_config()
-        self.postgres = Postgres()
         self.tg_rate_limiter = RateLimiterQueue(rate=30, per=1)
-        self.telegram_bot = TelegramBot(self.postgres, self.tg_rate_limiter)
+        self.telegram_bot = TelegramBot(self.tg_rate_limiter)
         self.scheduler = AsyncIOScheduler()
 
     def load_config(self):
@@ -40,22 +40,21 @@ class FlatsParser(metaclass=SingletonMeta):
 
     async def run(self):
         self.tg_rate_limiter.start()
-        # TODO: I do not like it
         asyncio.create_task(self.telegram_bot.start_polling())
+        await postgres_instance.init_db()
 
         self.scheduler.configure(timezone=pytz.timezone("Europe/Riga"))
-        self.postgres.connect()
 
         await self.telegram_bot.send_message(
             f"Started *{self.config.name}* scraper v*{self.config.version}*")
 
-        ss = SSParser(self.telegram_bot, self.postgres,
-                      self.config.districts, self.config.parsers.ss)
+        ss = SSParser(self.telegram_bot, self.config.districts,
+                      self.config.parsers.ss)
 
-        city24 = City24Parser(self.telegram_bot, self.postgres,
-                              self.config.districts, self.config.parsers.city24)
+        city24 = City24Parser(
+            self.telegram_bot, self.config.districts, self.config.parsers.city24)
 
-        await asyncio.gather(city24.run())
+        await asyncio.gather(ss.run())
 
         loop = asyncio.get_running_loop()
 
