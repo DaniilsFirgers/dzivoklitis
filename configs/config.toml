@@ -6,7 +6,7 @@ version = "1.0.1"
 city_name = "Riga" 
 deal_type = "Pārdod" # sell / hand_over (rent)
 name = "ss" 
-timeframe = "today-2" # today / today-2 / today-5
+timeframe = "today" # today / today-2 / today-5
 
 [parsers.city24]
 city_code = 245396 
