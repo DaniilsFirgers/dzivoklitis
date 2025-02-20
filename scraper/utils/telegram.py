@@ -4,20 +4,20 @@ import asyncio
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import BufferedInputFile
-from scraper.core.postgres import Postgres, Type
 from aiogram.filters import Command
+from scraper.database.crud import add_favorite, remove_favorite, get_favourites
+from scraper.database.models import Type
 from scraper.flat import Flat
 from scraper.utils.logger import logger
 from scraper.utils.limiter import RateLimiterQueue
 
 
 class TelegramBot:
-    def __init__(self, postgres: Postgres, rate_limiter: RateLimiterQueue):
+    def __init__(self, rate_limiter: RateLimiterQueue):
         self.token = os.getenv("TELEGRAM_TOKEN")
         self.user_id = os.getenv("TELEGRAM_USER_ID")
         self.bot = Bot(token=self.token)
         self.dp = Dispatcher()
-        self.postgres = postgres
         self.rate_limiter = rate_limiter
 
         # Register handlers
@@ -46,13 +46,11 @@ class TelegramBot:
         """Handles adding a flat to favorites."""
         try:
             id = call.data.split(":")[1]
-            if self.postgres.exists_with_id(id, Type.FAVOURITES):
-                return await self.bot.answer_callback_query(
-                    call.id, "Flat already in favorites ❤️"
-                )
-            self.postgres.add_to_favourites(id)
-            logger.info(f"Added a flat with id {id} to favourites.")
-            await self.bot.answer_callback_query(call.id, "Flat added to favorites ❤️")
+            if await add_favorite(id, self.user_id):
+                logger.info(f"Added a flat with id {id} to favorites.")
+                await self.bot.answer_callback_query(call.id, "Flat added to favorites ❤️")
+            else:
+                await self.bot.answer_callback_query(call.id, "Flat already in favorites ❤️")
         except Exception as e:
             logger.error(e)
             await self.bot.answer_callback_query(call.id, "Error adding a flat to favorites 😢")
@@ -61,7 +59,7 @@ class TelegramBot:
         """Handles removing a flat from favorites."""
         try:
             id = call.data.split(":")[1]
-            self.postgres.delete(id, Type.FAVOURITES)
+            await remove_favorite(id, self.user_id)
             await self.bot.answer_callback_query(call.id, "Flat removed from favorites 🗑️")
         except Exception as e:
             logger.error(f"Error removing a flat from favorites: {e}")
@@ -77,17 +75,15 @@ class TelegramBot:
 
     async def send_favorites(self, message: types.Message):
         """Sends the list of favorite flats to the user."""
-        favorites = self.postgres.get_favourites()
+        favorites = await get_favourites(self.user_id)
         if not favorites:
             return await self.bot.send_message(
                 chat_id=self.user_id,
                 text="You don't have any favorites yet 😢"
             )
         await self.send_message("Here are your favorite flats ❤️")
-        # for counter, favorite in enumerate(favorites, start=1):
-        #     print(favorite)
-        #     flat = Flat.from_sql_row(*favorite)
-        #     await self.send_flat_message(flat, Type.FAVOURITES, counter)
+        for counter, favorite in enumerate(favorites, start=1):
+            print(favorite)
 
     async def send_flat_message(self, flat: Flat, type: Type, counter: str = None):
         """Puts a flat message into the rate limiter queue."""
