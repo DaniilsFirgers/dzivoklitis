@@ -1,6 +1,8 @@
 import asyncio
 from typing import Callable
 
+from scraper.utils.logger import logger
+
 
 class RateLimiterQueue:
     """
@@ -11,7 +13,7 @@ class RateLimiterQueue:
         per (int): Time window in seconds for the rate limit.
     """
 
-    def __init__(self, rate: int, per: int):
+    def __init__(self, rate: int, per: int, buffer: float = 0.1):
         """
         Initializes the rate limiter.
 
@@ -22,13 +24,13 @@ class RateLimiterQueue:
         self.queue: asyncio.Queue = asyncio.Queue()
         self.rate: int = rate
         self.per: int = per
+        self.buffer: float = buffer
         self._task = None
 
     def start(self):
         """Starts the rate limiter."""
-        if self._task is not None:
-            return
-        asyncio.create_task(self._worker())
+        if self._task is None or self._task.done():
+            self._task = asyncio.create_task(self._worker())
 
     async def add_request(self, request: Callable[[], asyncio.Future]):
         """
@@ -37,11 +39,16 @@ class RateLimiterQueue:
         Args:
             request (Callable[[], asyncio.Future]): An async function representing the request.
         """
+
         await self.queue.put(request)
 
     async def _worker(self):
         """Background worker that processes requests from the queue at a controlled rate."""
         while True:
-            request = await self.queue.get()
-            await request()
-            await asyncio.sleep((self.per / self.rate) + 0.1)
+            try:
+                request = await self.queue.get()
+                await request()
+            except Exception as e:
+                logger.error(f"Failed to send message inside worker: {e}")
+            finally:
+                await asyncio.sleep((self.per / self.rate) + self.buffer)
