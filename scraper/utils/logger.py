@@ -7,6 +7,8 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+
+logging.getLogger('sqlalchemy.engine').addHandler(logging.StreamHandler())
+logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
