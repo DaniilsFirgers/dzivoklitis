@@ -10,9 +10,9 @@ from scraper.schemas.city_24 import City24ResFlatDict
 from scraper.schemas.shared import Coordinates, DealType
 from scraper.utils.logger import logger
 from scraper.utils.meta import get_coordinates, try_parse_float, try_parse_int
-from PIL import Image
 from fake_useragent import UserAgent
 from scraper.database.models import Flat as FlatORM
+import pyvips
 
 
 @dataclass
@@ -73,20 +73,15 @@ class Flat():
                     return None
 
                 # Get image content and open it
-                img_data = await response.read()  # Read the image asynchronously
-                image_file = io.BytesIO(img_data)
-                image = Image.open(image_file)
+                img_data = await response.read()
+                image = pyvips.Image.new_from_buffer(img_data, "")
 
-                # Resize image while maintaining aspect ratio
-                max_size = (303, 230)
-                image.thumbnail(max_size, Image.LANCZOS)
+                # Automatically keeps aspect ratio
+                image = image.thumbnail_image(303)
+                resized_image_file = image.write_to_buffer(
+                    ".jpg")  # Save as JPEG
 
-                # Save to BytesIO buffer
-                resized_image_file = io.BytesIO()
-                image.save(resized_image_file, format="JPEG")
-
-                resized_image_file.seek(0)
-                return resized_image_file.getvalue()
+                return resized_image_file
         except Exception as e:
             logger.error(f"Error downloading image: {e}")
             return None
@@ -166,12 +161,12 @@ class SS_Flat(Flat):
 
 class City24_Flat(Flat):
     def __init__(self, district_name: str,  deal_type: str, flat: City24ResFlatDict):
-        url = self.format_url(flat["friendly_id"])
-        super().__init__(url=url, district=district_name,
+        super().__init__(url="", district=district_name,
                          source=Source.CITY_24, deal_type=deal_type)
         self.flat = flat
 
     def create(self, unified_flat_series: Dict[str, str]):
+        self.url = self.format_url(self.flat["friendly_id"])
         self.price_per_m2 = self.flat["price_per_unit"]
         self.area = try_parse_float(self.flat["property_size"])
         self.price = try_parse_int((self.price_per_m2 * self.area))
@@ -198,7 +193,6 @@ class City24_Flat(Flat):
         return url.replace("{fmt:em}", "14")
 
     def format_url(self, id: str) -> str:
-        # curently it is only Riga, but i want to make it universal
         if self.deal_type == DealType.RENT:
             return f"https://www.city24.lv/real-estate/apartments-for-rent/riga/{id}"
 
