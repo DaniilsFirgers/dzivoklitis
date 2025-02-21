@@ -37,7 +37,7 @@ class TelegramBot:
         """Handles adding a flat to favorites."""
         try:
             id = call.data.split(":")[1]
-            if await add_favorite(id, self.user_id):
+            if await add_favorite(id, call.from_user.id):
                 logger.info(f"Added a flat with id {id} to favorites.")
                 await self.bot.answer_callback_query(call.id, "Dzīvoklis tika pievienots favorītiem ❤️")
             else:
@@ -124,7 +124,7 @@ class TelegramBot:
     def flat_to_msg(self, flat: Flat, counter: int = None) -> str:
         """Generates the message text for a flat."""
         base_msg = (
-            f"<b>Source</b>: {flat.source.value}\n"
+            f"<b>Avots</b>: {flat.source.value}\n"
             f"<b>Apkaime</b>: {flat.district}\n"
             f"<b>Iela</b>: {flat.street}\n"
             f"<b>Sērija</b>: {flat.series}\n"

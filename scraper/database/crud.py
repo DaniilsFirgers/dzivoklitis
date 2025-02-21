@@ -26,7 +26,7 @@ async def flat_exists(flat_id: str, price: int) -> bool:
         return result.scalar_one_or_none() is not None
 
 
-async def add_favorite(flat_id: str, user_id: str) -> bool:
+async def add_favorite(flat_id: str, user_id: int) -> bool:
     """Add a favorite if it does not exist. Returns True if added, False if already exists."""
     async with postgres_instance.SessionLocal() as db:
         query = select(Favourite).where(
