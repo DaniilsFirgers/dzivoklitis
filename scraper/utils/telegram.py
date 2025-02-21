@@ -31,16 +31,7 @@ class TelegramBot:
 
     async def handle_start(self, message: types.Message):
         """Handles the /start command."""
-        await self.bot.send_message(message.chat.id, "Hello! I'm a bot that helps with flats!")
-
-    async def start(self):
-        """Starts the bot and sends an initial message."""
-        await self.bot.send_message(
-            self.user_id,
-            "Hello! I'm a bot that will help you find flats.\n"
-            "You can use the following commands:\n"
-            "/favorites - to see your favorite flats\n"
-        )
+        await self.bot.send_message(message.chat.id, "Sveiki! Esmu bots, kas jums palīdzēs saņemt nekustamā īpašuma sludinājumu paziņojumus un sekot līdzi cenu izmaiņām!")
 
     async def handle_add_to_favorites(self, call: types.CallbackQuery):
         """Handles adding a flat to favorites."""
