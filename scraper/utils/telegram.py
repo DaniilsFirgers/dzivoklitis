@@ -48,9 +48,9 @@ class TelegramBot:
             id = call.data.split(":")[1]
             if await add_favorite(id, self.user_id):
                 logger.info(f"Added a flat with id {id} to favorites.")
-                await self.bot.answer_callback_query(call.id, "Flat added to favorites ❤️")
+                await self.bot.answer_callback_query(call.id, "Dzīvoklis tika pievienots favorītiem ❤️")
             else:
-                await self.bot.answer_callback_query(call.id, "Flat already in favorites ❤️")
+                await self.bot.answer_callback_query(call.id, "Dzīvoklis jau ir starp favorītiem ❤️")
         except Exception as e:
             logger.error(e)
             await self.bot.answer_callback_query(call.id, "Error adding a flat to favorites 😢")
@@ -60,10 +60,10 @@ class TelegramBot:
         try:
             id = call.data.split(":")[1]
             await remove_favorite(id, self.user_id)
-            await self.bot.answer_callback_query(call.id, "Flat removed from favorites 🗑️")
+            await self.bot.answer_callback_query(call.id, "Dzīvokļa sludinājums izdzēsts no favorītiem 🗑️")
         except Exception as e:
             logger.error(f"Error removing a flat from favorites: {e}")
-            await self.bot.answer_callback_query(call.id, "Error removing a flat from favorites 😢")
+            await self.bot.answer_callback_query(call.id, "Kļūda, dzēšot dzīvokļa sludinājumu no favorītiem 😢")
 
     async def send_message(self, message: str):
         """Sends a message to the user."""
@@ -79,7 +79,7 @@ class TelegramBot:
         if not favorites:
             return await self.bot.send_message(
                 chat_id=self.user_id,
-                text="You don't have any favorites yet 😢"
+                text="Jūs vēl neesat pievienojis nevienu iecienītāko dzīvokli 😢"
             )
         await self.send_message("Here are your favorite flats ❤️")
         for counter, favorite in enumerate(favorites, start=1):
@@ -95,19 +95,19 @@ class TelegramBot:
 
         inline_keyboard = [
             [
-                types.InlineKeyboardButton(text="🔍 View URL", url=flat.url)
+                types.InlineKeyboardButton(text="🔍Aplūkot URL", url=flat.url)
             ]
         ]
 
         if type == Type.FAVOURITES:
             inline_keyboard.append(
                 [types.InlineKeyboardButton(
-                    text="🗑️ Delete", callback_data=f"remove_from_favorites:{flat.id}")]
+                    text="🗑️ Izdzēst", callback_data=f"remove_from_favorites:{flat.id}")]
             )
         else:
             inline_keyboard.append(
                 [types.InlineKeyboardButton(
-                    text="❤️ Add to Favorites", callback_data=f"add_to_favorites:{flat.id}")]
+                    text="❤️ Pievienot favorītiem", callback_data=f"add_to_favorites:{flat.id}")]
 
             )
         markup = types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
@@ -134,17 +134,17 @@ class TelegramBot:
         """Generates the message text for a flat."""
         base_msg = (
             f"<b>Source</b>: {flat.source.value}\n"
-            f"<b>District</b>: {flat.district}\n"
-            f"<b>Street</b>: {flat.street}\n"
-            f"<b>Series</b>: {flat.series}\n"
-            f"<b>Rooms</b>: {flat.rooms}\n"
-            f"<b>M2</b>: {flat.area}\n"
-            f"<b>Floor</b>: {flat.floor}/{flat.floors_total}\n"
-            f"<b>Price per m2</b>: {flat.price_per_m2}\n"
-            f"<b>Full price</b>: {flat.price}\n"
+            f"<b>Apkaime</b>: {flat.district}\n"
+            f"<b>Iela</b>: {flat.street}\n"
+            f"<b>Sērija</b>: {flat.series}\n"
+            f"<b>Istabas</b>: {flat.rooms}\n"
+            f"<b>Platība</b>: {flat.area}\n"
+            f"<b>Stāvs</b>: {flat.floor}/{flat.floors_total}\n"
+            f"<b>Cena €/m²</b>: {flat.price_per_m2}\n"
+            f"<b>Cena €</b>: {flat.price}\n"
         )
 
-        return f"*Index*: {counter}\n" + base_msg if counter is not None else base_msg
+        return f"*Numurs*: {counter}\n" + base_msg if counter is not None else base_msg
 
     async def start_polling(self):
         """Start an asyncio task to poll the bot."""
