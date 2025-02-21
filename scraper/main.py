@@ -54,7 +54,7 @@ class FlatsParser(metaclass=SingletonMeta):
         city24 = City24Parser(
             self.telegram_bot, self.config.districts, self.config.parsers.city24)
 
-        await asyncio.gather(city24.run())
+        await asyncio.gather(city24.run(), ss.run())
 
         loop = asyncio.get_running_loop()
 
