@@ -102,15 +102,6 @@ class City24Parser(BaseParser):
             logger.error(e)
             return
 
-        #  TODO: check if correct
-        # try:
-        #     district_info = next(
-        #         (district for district in self.preferred_districts if district.name == district_name), None)
-        #     if district_info:
-        #         flat.validate(district_info)
-        # except ValueError:
-        #     return
-
         try:
             flat_orm = flat.to_orm()
             await upsert_flat(flat_orm, flat.price)
@@ -118,7 +109,16 @@ class City24Parser(BaseParser):
             logger.error(e)
             return
 
-        await self.telegram_bot.send_flat_message(flat, Type.FLATS)
+        try:
+            district_info = next(
+                (district for district in self.preferred_districts if district.name == district_name), None)
+            if district_info:
+                logger.warning(f"District {district_name} found")
+                flat.validate(district_info)
+                await self.telegram_bot.send_flat_message(flat, Type.FLATS)
+                logger.info(f"Sending from city24: {flat.id}")
+        except ValueError:
+            return
 
     def get_district_name(self, flat_data) -> str:
         if flat_data["address"]["district"] is None:

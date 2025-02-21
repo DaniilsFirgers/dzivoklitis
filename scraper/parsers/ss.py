@@ -102,14 +102,6 @@ class SSParser(BaseParser):
             logger.error(e)
             return
 
-        # try:
-        #     district_info = next(
-        #         (district for district in self.preferred_districts if district.name == district_name), None)
-        #     if district_info:
-        #         flat.validate(district_info)
-        # except ValueError:
-        #     return
-
         try:
             flat_orm = flat.to_orm()
             await upsert_flat(flat_orm, flat.price)
@@ -117,9 +109,15 @@ class SSParser(BaseParser):
             logger.error(e)
             return
 
-        await self.telegram_bot.send_flat_message(flat, Type.FLATS)
-
-        logger.warning(f"Processing flat {flat.id}")
+        try:
+            district_info = next(
+                (district for district in self.preferred_districts if district.name == district_name), None)
+            if district_info:
+                flat.validate(district_info)
+                await self.telegram_bot.send_flat_message(flat, Type.FLATS)
+                logger.info(f"Sending from ss: {flat.id}")
+        except ValueError:
+            return
 
     async def scrape(self) -> None:
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(
