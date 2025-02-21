@@ -95,20 +95,21 @@ class City24Parser(BaseParser):
         flat.image_data = await flat.download_img(img_url, session)
 
         try:
-            if await flat_exists(flat.id, flat.price):
+            alrerady_in_db = await flat_exists(flat.id, flat.price)
+            if alrerady_in_db:
                 return
         except Exception as e:
             logger.error(e)
             return
 
         #  TODO: check if correct
-        try:
-            district_info = next(
-                (district for district in self.preferred_districts if district.name == district_name), None)
-            if district_info:
-                flat.validate(district_info)
-        except ValueError:
-            return
+        # try:
+        #     district_info = next(
+        #         (district for district in self.preferred_districts if district.name == district_name), None)
+        #     if district_info:
+        #         flat.validate(district_info)
+        # except ValueError:
+        #     return
 
         try:
             flat_orm = flat.to_orm()
