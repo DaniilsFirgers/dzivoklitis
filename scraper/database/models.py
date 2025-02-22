@@ -11,6 +11,7 @@ class TableType(Enum):
     FLATS = "flats"
     PRICES = "prices"
     FAVOURITES = "favourites"
+    USERS = "users"
 
 
 class Flat(postgres_instance.Base):
@@ -67,3 +68,15 @@ class Favourite(postgres_instance.Base):
 
     # Relationship back to Flat
     flat = relationship("Flat", back_populates="favourites")
+
+
+class User(postgres_instance.Base):
+    __tablename__ = TableType.USERS.value
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tg_user_id = Column(Integer, nullable=False)
+    username = Column(String(50), nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True),
+                        server_default=func.now(), nullable=False)
+    updated_at = Column(TIMESTAMP(timezone=True),
+                        server_default=func.now(), onupdate=func.now(), nullable=False)
