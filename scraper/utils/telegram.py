@@ -1,11 +1,11 @@
 from enum import Enum
-import io
 import os
 import asyncio
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import BufferedInputFile
 from aiogram.filters import Command
+from aiogram.types import BotCommand
 from scraper.database.crud import add_favorite, remove_favorite, get_favourites
 from scraper.flat import Flat
 from scraper.utils.logger import logger
@@ -32,6 +32,16 @@ class TelegramBot:
         self.dp.message.register(
             self.send_favorites, Command("favorites"))
         self.dp.message.register(self.handle_start, Command("start"))
+
+    async def set_bot_commands(self):
+        commands = [
+            BotCommand(command="start", description="Uzsākt botu"),
+            BotCommand(command="favorites",
+                       description="Apskatīt favorītu dzīvokļu sludinājumus"),
+            BotCommand(command="settings",
+                       description="Pielāgojiet filtra iestatījumus"),
+        ]
+        await self.bot.set_my_commands(commands)
 
     async def handle_start(self, message: types.Message):
         """Handles the /start command."""
@@ -151,6 +161,7 @@ class TelegramBot:
 
     async def start_polling(self):
         """Start an asyncio task to poll the bot."""
+        await self.set_bot_commands()
         await self._start_polling()
 
     async def _start_polling(self):
