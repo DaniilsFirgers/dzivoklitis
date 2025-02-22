@@ -25,28 +25,28 @@ async def flat_exists(flat_id: str, price: int) -> bool:
         return result.scalar_one_or_none() is not None
 
 
-async def add_favorite(flat_id: str, user_id: int) -> bool:
+async def add_favorite(flat_id: str, tg_user_id: int) -> bool:
     """Add a favorite if it does not exist. Returns True if added, False if already exists."""
     async with postgres_instance.SessionLocal() as db:
         query = select(Favourite).where(
-            Favourite.flat_id == flat_id, Favourite.user_id == user_id
+            Favourite.flat_id == flat_id, Favourite.tg_user_id == tg_user_id
         )
         result = await db.execute(query)
 
         if result.scalars().first():
             return False
 
-        new_fav = Favourite(flat_id=flat_id, user_id=user_id)
+        new_fav = Favourite(flat_id=flat_id, tg_user_id=tg_user_id)
         db.add(new_fav)
         await db.commit()
         return True
 
 
-async def remove_favorite(flat_id: str, user_id: str) -> bool:
+async def remove_favorite(flat_id: str, tg_user_id: str) -> bool:
     """Remove a flat from the user's favorites. Returns True if deleted, False if not found."""
     async with postgres_instance.SessionLocal() as db:
         query = select(Favourite).where(
-            Favourite.flat_id == flat_id, Favourite.user_id == user_id
+            Favourite.flat_id == flat_id, Favourite.tg_user_id == tg_user_id
         )
         result = await db.execute(query)
         fav = result.scalars().first()
@@ -59,24 +59,24 @@ async def remove_favorite(flat_id: str, user_id: str) -> bool:
         return True
 
 
-async def find_favorite(flat_id: str, user_id: str) -> Favourite | None:
+async def find_favorite(flat_id: str, tg_user_id: str) -> Favourite | None:
     """Check if a flat is in the user's favorites."""
     async with postgres_instance.SessionLocal() as db:
         query = select(Favourite).where(
-            Favourite.flat_id == flat_id, Favourite.user_id == user_id
+            Favourite.flat_id == flat_id, Favourite.tg_user_id == tg_user_id
         )
         result = await db.execute(query)
         return result.scalars().first()
 
 
-async def get_favourites(user_id: int) -> list[Flat]:
+async def get_favourites(tg_user_id: int) -> list[Flat]:
     """Get all favorites for a user."""
     async with postgres_instance.SessionLocal() as db:
         query = (
             select(Flat)
             .join(Favourite, Favourite.flat_id == Flat.flat_id)
             .options(joinedload(Flat.prices))
-            .where(Favourite.user_id == user_id)
+            .where(Favourite.tg_user_id == tg_user_id)
         )
         result = await db.execute(query)
         return result.unique().scalars().all()

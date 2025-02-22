@@ -15,7 +15,6 @@ from scraper.utils.limiter import RateLimiterQueue
 class TelegramBot:
     def __init__(self, rate_limiter: RateLimiterQueue):
         self.token = os.getenv("TELEGRAM_TOKEN")
-        self.user_id = os.getenv("TELEGRAM_USER_ID")
         self.bot = Bot(token=self.token)
         self.dp = Dispatcher()
         self.rate_limiter = rate_limiter
@@ -57,14 +56,14 @@ class TelegramBot:
             logger.error(f"Error removing a flat from favorites: {e}")
             await self.bot.answer_callback_query(call.id, "Kļūda, dzēšot dzīvokļa sludinājumu no favorītiem 😢")
 
-    async def send_text_msg_with_limiter(self, message: str, user_id: int):
+    async def send_text_msg_with_limiter(self, message: str, tg_user_id: int):
         """Sends a message to the user."""
-        await self.rate_limiter.add_request(lambda: self._send_text_message(message, user_id))
+        await self.rate_limiter.add_request(lambda: self._send_text_message(message, tg_user_id))
 
-    async def _send_text_message(self, message: str, user_id: int):
+    async def _send_text_message(self, message: str, tg_user_id: int):
         """Sends a message to the user."""
         await self.bot.send_message(
-            chat_id=user_id,
+            chat_id=tg_user_id,
             text=message,
             parse_mode="Markdown"
         )
@@ -81,11 +80,11 @@ class TelegramBot:
             flat = Flat.from_orm(favorite)
             await self.send_flat_msg_with_limiter(flat, TableType.FAVOURITES, message.from_user.id, counter)
 
-    async def send_flat_msg_with_limiter(self, flat: Flat, type: TableType, user_id: int, counter: str = None):
+    async def send_flat_msg_with_limiter(self, flat: Flat, type: TableType, tg_user_id: int, counter: str = None):
         """Puts a flat message into the rate limiter queue."""
-        await self.rate_limiter.add_request(lambda: self._send_flat_message(flat, type, user_id, counter))
+        await self.rate_limiter.add_request(lambda: self._send_flat_message(flat, type, tg_user_id, counter))
 
-    async def _send_flat_message(self, flat: Flat, type: TableType, user_id: int, counter: str = None):
+    async def _send_flat_message(self, flat: Flat, type: TableType, tg_user_id: int, counter: str = None):
         """Sends a flat's information message to the user."""
         msg_txt = self.flat_to_msg(flat, counter)
 
@@ -110,7 +109,7 @@ class TelegramBot:
 
         if flat.image_data is None:
             await self.bot.send_message(
-                chat_id=user_id,
+                chat_id=tg_user_id,
                 text=msg_txt,
                 parse_mode="HTML",
                 reply_markup=markup if markup else None
@@ -119,7 +118,7 @@ class TelegramBot:
             photo = BufferedInputFile(
                 flat.image_data, filename=f"{flat.id}.jpg")
             await self.bot.send_photo(
-                chat_id=user_id,
+                chat_id=tg_user_id,
                 photo=photo,
                 caption=msg_txt,
                 parse_mode="HTML",

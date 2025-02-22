@@ -63,7 +63,7 @@ class Favourite(postgres_instance.Base):
     flat_id = Column(String(255), ForeignKey(
         "flats.flat_id", ondelete="CASCADE"), nullable=False)
 
-    user_id = Column(Integer, nullable=False)
+    tg_user_id = Column(Integer, nullable=False)
 
     # Relationship back to Flat
     flat = relationship("Flat", back_populates="favourites")
