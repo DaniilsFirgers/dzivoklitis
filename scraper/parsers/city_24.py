@@ -115,7 +115,7 @@ class City24Parser(BaseParser):
             if district_info:
                 logger.warning(f"District {district_name} found")
                 flat.validate(district_info)
-                await self.telegram_bot.send_flat_message(flat, Type.FLATS)
+                await self.telegram_bot.send_flat_msg_with_limiter(flat, Type.FLATS)
                 logger.info(f"Sending from city24: {flat.id}")
         except ValueError:
             return
