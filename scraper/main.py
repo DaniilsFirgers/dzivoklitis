@@ -4,7 +4,6 @@ import pytz
 from pathlib import Path
 from scraper.config import Config, District, ParserConfigs, SsParserConfig, City24ParserConfig, TelegramConfig
 from scraper.utils.telegram import TelegramBot
-from scraper.core.postgres import Postgres
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from scraper.parsers.city_24 import City24Parser
 from scraper.utils.logger import logger
