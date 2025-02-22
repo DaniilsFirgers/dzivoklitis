@@ -19,6 +19,9 @@ At the moment cron jobs are set to run at 9,12,15,18 and 21, but can be changed 
 
 TODO:
 
+- [ ] Check favorites functionality and wrap it into the rate limiter queue
+- [ ] Add users table (for now no registration)
+- [ ] UI with buttons
 - [ ] Rotating bots ???
 - [ ] Add default user to the database, they will receive same ads
 - [ ] Get previous favorites and store them correctly
