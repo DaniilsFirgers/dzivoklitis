@@ -31,21 +31,21 @@ CREATE TABLE IF NOT EXISTS prices(
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS users(
+    id SERIAL PRIMARY KEY,
+    tg_user_id BIGINT NOT NULL UNIQUE,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- create a table to store references to favourite flats
 CREATE TABLE IF NOT EXISTS favourites(
     id SERIAL PRIMARY KEY, -- SERIAL is a type for auto-incrementing integers
     flat_id VARCHAR(255) NOT NULL,
     tg_user_id INT NOT NULL,
-    FOREIGN KEY(flat_id) REFERENCES flats(flat_id) ON DELETE CASCADE -- ON DELETE CASCADE means that if a flat is deleted, all references to it will be deleted as well
+    FOREIGN KEY(flat_id) REFERENCES flats(flat_id) ON DELETE CASCADE, -- ON DELETE CASCADE means that if a flat is deleted, all references to it will be deleted as well
     FOREIGN KEY(tg_user_id) REFERENCES users(tg_user_id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS users(
-    id SERIAL PRIMARY KEY,
-    tg_user_id INT NOT NULL,
-    username VARCHAR(255) NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- create indexes
