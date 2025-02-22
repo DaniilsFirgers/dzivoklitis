@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from scraper.database.models import Flat, Price, Favourite
+from scraper.database.models import Flat, Price, Favourite, User
 from scraper.database.postgres import postgres_instance
 from sqlalchemy.orm import joinedload
 
@@ -80,3 +80,11 @@ async def get_favourites(tg_user_id: int) -> list[Flat]:
         )
         result = await db.execute(query)
         return result.unique().scalars().all()
+
+
+async def get_users() -> list[User]:
+    """Get all users."""
+    async with postgres_instance.SessionLocal() as db:
+        query = select(User)
+        result = await db.execute(query)
+        return result.scalars().all()
