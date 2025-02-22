@@ -1,7 +1,8 @@
 from enum import Enum
+from typing import List
 from sqlalchemy import Column, String, Integer, SmallInteger, DECIMAL, ForeignKey, Text, TIMESTAMP,  func
 from sqlalchemy.dialects.postgresql import BYTEA
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 from geoalchemy2 import Geometry
 from scraper.database.postgres import postgres_instance
 
@@ -33,11 +34,11 @@ class Flat(postgres_instance.Base):
                         server_default=func.now())
 
     # Relationship with prices table
-    prices = relationship("Price", back_populates="flat",
-                          cascade="all, delete")
+    prices: Mapped[List["Price"]] = relationship("Price", back_populates="flat",
+                                                 cascade="all, delete")
 
     # Relationship with favourites table
-    favourites = relationship(
+    favourites: Mapped[List["Favourite"]] = relationship(
         "Favourite", back_populates="flat", cascade="all, delete")
 
 
