@@ -1,3 +1,4 @@
+from enum import Enum
 import io
 import os
 import asyncio
@@ -6,10 +7,14 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import BufferedInputFile
 from aiogram.filters import Command
 from scraper.database.crud import add_favorite, remove_favorite, get_favourites
-from scraper.database.models import TableType
 from scraper.flat import Flat
 from scraper.utils.logger import logger
 from scraper.utils.limiter import RateLimiterQueue
+
+
+class MessageType(Enum):
+    FLATS = "flats"
+    FAVOURITES = "favourites"
 
 
 class TelegramBot:
@@ -78,13 +83,13 @@ class TelegramBot:
         await self.send_text_msg_with_limiter(text, message.from_user.id)
         for counter, favorite in enumerate(favorites, start=1):
             flat = Flat.from_orm(favorite)
-            await self.send_flat_msg_with_limiter(flat, TableType.FAVOURITES, message.from_user.id, counter)
+            await self.send_flat_msg_with_limiter(flat, MessageType.FAVOURITES, message.from_user.id, counter)
 
-    async def send_flat_msg_with_limiter(self, flat: Flat, type: TableType, tg_user_id: int, counter: str = None):
+    async def send_flat_msg_with_limiter(self, flat: Flat, type: MessageType, tg_user_id: int, counter: str = None):
         """Puts a flat message into the rate limiter queue."""
         await self.rate_limiter.add_request(lambda: self._send_flat_message(flat, type, tg_user_id, counter))
 
-    async def _send_flat_message(self, flat: Flat, type: TableType, tg_user_id: int, counter: str = None):
+    async def _send_flat_message(self, flat: Flat, type: MessageType, tg_user_id: int, counter: str = None):
         """Sends a flat's information message to the user."""
         msg_txt = self.flat_to_msg(flat, counter)
 
@@ -94,7 +99,7 @@ class TelegramBot:
             ]
         ]
 
-        if type == TableType.FAVOURITES:
+        if type == MessageType.FAVOURITES:
             inline_keyboard.append(
                 [types.InlineKeyboardButton(
                     text="🗑️ Izdzēst", callback_data=f"remove_from_favorites:{flat.id}")]
@@ -124,6 +129,9 @@ class TelegramBot:
                 parse_mode="HTML",
                 reply_markup=markup if markup else None
             )
+
+    def flat_update_to_msg(self, flat: Flat) -> str:
+        pass
 
     def flat_to_msg(self, flat: Flat, counter: int = None) -> str:
         """Generates the message text for a flat."""
