@@ -35,8 +35,14 @@ CREATE TABLE IF NOT EXISTS prices(
 CREATE TABLE IF NOT EXISTS favourites(
     id SERIAL PRIMARY KEY, -- SERIAL is a type for auto-incrementing integers
     flat_id VARCHAR(255) NOT NULL,
-    user_id INT NOT NULL,
+    tg_user_id INT NOT NULL,
     FOREIGN KEY(flat_id) REFERENCES flats(flat_id) ON DELETE CASCADE -- ON DELETE CASCADE means that if a flat is deleted, all references to it will be deleted as well
+);
+
+CREATE TABLE IF NOT EXISTS users(
+    id SERIAL PRIMARY KEY,
+    tg_user_id INT NOT NULL,
+    username VARCHAR(255) NOT NULL,
 );
 
 -- create indexes
