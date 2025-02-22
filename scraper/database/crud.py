@@ -1,8 +1,7 @@
-from sqlalchemy import func
 from sqlalchemy.future import select
 from scraper.database.models import Flat, Price, Favourite
-from sqlalchemy.dialects.postgresql import insert
 from scraper.database.postgres import postgres_instance
+from sqlalchemy.orm import joinedload
 
 
 async def upsert_flat(flat: Flat, price: int) -> None:
@@ -70,9 +69,14 @@ async def find_favorite(flat_id: str, user_id: str) -> Favourite | None:
         return result.scalars().first()
 
 
-async def get_favourites(user_id: str) -> list[Favourite]:
+async def get_favourites(user_id: int) -> list[Flat]:
     """Get all favorites for a user."""
     async with postgres_instance.SessionLocal() as db:
-        query = select(Favourite).where(Favourite.user_id == user_id)
+        query = (
+            select(Flat)
+            .join(Favourite, Favourite.flat_id == Flat.flat_id)
+            .options(joinedload(Flat.prices))
+            .where(Favourite.user_id == user_id)
+        )
         result = await db.execute(query)
-        return result.scalars().all()
+        return result.unique().scalars().all()
