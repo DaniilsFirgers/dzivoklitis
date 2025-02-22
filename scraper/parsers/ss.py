@@ -4,7 +4,7 @@ from typing import List
 from bs4 import BeautifulSoup, ResultSet, Tag
 
 from scraper.config import District, Source, SsParserConfig
-from scraper.database.models import Type
+from scraper.database.models import TableType
 from scraper.database.crud import flat_exists, upsert_flat
 from scraper.utils.telegram import TelegramBot
 from scraper.flat import SS_Flat
@@ -114,7 +114,7 @@ class SSParser(BaseParser):
                 (district for district in self.preferred_districts if district.name == district_name), None)
             if district_info:
                 flat.validate(district_info)
-                await self.telegram_bot.send_flat_message(flat, Type.FLATS)
+                await self.telegram_bot.send_flat_msg_with_limiter(flat, TableType.FLATS)
                 logger.info(f"Sending from ss: {flat.id}")
         except ValueError:
             return

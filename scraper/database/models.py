@@ -7,14 +7,14 @@ from geoalchemy2 import Geometry
 from scraper.database.postgres import postgres_instance
 
 
-class Type(Enum):
+class TableType(Enum):
     FLATS = "flats"
     PRICES = "prices"
     FAVOURITES = "favourites"
 
 
 class Flat(postgres_instance.Base):
-    __tablename__ = Type.FLATS.value
+    __tablename__ = TableType.FLATS.value
 
     flat_id = Column(String(255), primary_key=True)
     source = Column(String(30), nullable=False)
@@ -43,7 +43,7 @@ class Flat(postgres_instance.Base):
 
 
 class Price(postgres_instance.Base):
-    __tablename__ = Type.PRICES.value
+    __tablename__ = TableType.PRICES.value
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     flat_id = Column(String(255), ForeignKey(
@@ -57,7 +57,7 @@ class Price(postgres_instance.Base):
 
 
 class Favourite(postgres_instance.Base):
-    __tablename__ = Type.FAVOURITES.value
+    __tablename__ = TableType.FAVOURITES.value
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     flat_id = Column(String(255), ForeignKey(
