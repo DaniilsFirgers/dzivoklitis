@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import BufferedInputFile
 from aiogram.filters import Command
 from scraper.database.crud import add_favorite, remove_favorite, get_favourites
-from scraper.database.models import Type
+from scraper.database.models import TableType
 from scraper.flat import Flat
 from scraper.utils.logger import logger
 from scraper.utils.limiter import RateLimiterQueue
@@ -31,7 +31,8 @@ class TelegramBot:
 
     async def handle_start(self, message: types.Message):
         """Handles the /start command."""
-        await self.bot.send_message(message.chat.id, "Sveiki! Esmu bots, kas jums palīdzēs saņemt nekustamā īpašuma sludinājumu paziņojumus un sekot līdzi cenu izmaiņām!")
+        text = "Sveiki! Esmu bots, kas jums palīdzēs saņemt nekustamā īpašuma sludinājumu paziņojumus un sekot līdzi cenu izmaiņām!"
+        await self.send_text_msg_with_limiter(text, message.from_user.id)
 
     async def handle_add_to_favorites(self, call: types.CallbackQuery):
         """Handles adding a flat to favorites."""
@@ -50,16 +51,20 @@ class TelegramBot:
         """Handles removing a flat from favorites."""
         try:
             id = call.data.split(":")[1]
-            await remove_favorite(id, self.user_id)
+            await remove_favorite(id, call.from_user.id)
             await self.bot.answer_callback_query(call.id, "Dzīvokļa sludinājums izdzēsts no favorītiem 🗑️")
         except Exception as e:
             logger.error(f"Error removing a flat from favorites: {e}")
             await self.bot.answer_callback_query(call.id, "Kļūda, dzēšot dzīvokļa sludinājumu no favorītiem 😢")
 
-    async def send_message(self, message: str):
+    async def send_text_msg_with_limiter(self, message: str, user_id: int):
+        """Sends a message to the user."""
+        await self.rate_limiter.add_request(lambda: self._send_text_message(message, user_id))
+
+    async def _send_text_message(self, message: str, user_id: int):
         """Sends a message to the user."""
         await self.bot.send_message(
-            chat_id=self.user_id,
+            chat_id=user_id,
             text=message,
             parse_mode="Markdown"
         )
@@ -68,20 +73,19 @@ class TelegramBot:
         """Sends the list of favorite flats to the user."""
         favorites = await get_favourites(message.from_user.id)
         if not favorites:
-            return await self.bot.send_message(
-                chat_id=self.user_id,
-                text="Jūs vēl neesat pievienojis nevienu iecienītāko dzīvokli 😢"
-            )
-        await self.send_message("Here are your favorite flats ❤️")
+            text = "Jūs vēl neesat pievienojis nevienu iecienītāko dzīvokli 😢"
+            return await self.send_text_msg_with_limiter(text, message.from_user.id)
+        text = "Šeit ir jūsu iecienītākie dzīvokļi ❤️"
+        await self.send_text_msg_with_limiter(text, message.from_user.id)
         for counter, favorite in enumerate(favorites, start=1):
             flat = Flat.from_orm(favorite)
-            await self.send_flat_message(flat, Type.FAVOURITES, counter)
+            await self.send_flat_msg_with_limiter(flat, TableType.FAVOURITES, message.from_user.id, counter)
 
-    async def send_flat_message(self, flat: Flat, type: Type, counter: str = None):
+    async def send_flat_msg_with_limiter(self, flat: Flat, type: TableType, user_id: int, counter: str = None):
         """Puts a flat message into the rate limiter queue."""
-        await self.rate_limiter.add_request(lambda: self._send_flat_message(flat, type, counter))
+        await self.rate_limiter.add_request(lambda: self._send_flat_message(flat, type, user_id, counter))
 
-    async def _send_flat_message(self, flat: Flat, type: Type, counter: str = None):
+    async def _send_flat_message(self, flat: Flat, type: TableType, user_id: int, counter: str = None):
         """Sends a flat's information message to the user."""
         msg_txt = self.flat_to_msg(flat, counter)
 
@@ -91,7 +95,7 @@ class TelegramBot:
             ]
         ]
 
-        if type == Type.FAVOURITES:
+        if type == TableType.FAVOURITES:
             inline_keyboard.append(
                 [types.InlineKeyboardButton(
                     text="🗑️ Izdzēst", callback_data=f"remove_from_favorites:{flat.id}")]
@@ -106,7 +110,7 @@ class TelegramBot:
 
         if flat.image_data is None:
             await self.bot.send_message(
-                chat_id=self.user_id,
+                chat_id=user_id,
                 text=msg_txt,
                 parse_mode="HTML",
                 reply_markup=markup if markup else None
@@ -115,7 +119,7 @@ class TelegramBot:
             photo = BufferedInputFile(
                 flat.image_data, filename=f"{flat.id}.jpg")
             await self.bot.send_photo(
-                chat_id=self.user_id,
+                chat_id=user_id,
                 photo=photo,
                 caption=msg_txt,
                 parse_mode="HTML",
