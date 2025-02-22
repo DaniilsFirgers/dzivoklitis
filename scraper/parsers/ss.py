@@ -4,7 +4,7 @@ from typing import List
 from bs4 import BeautifulSoup, ResultSet, Tag
 
 from scraper.config import District, Source, SsParserConfig
-from scraper.database.crud import flat_exists, upsert_flat
+from scraper.database.crud import flat_exists, get_users, upsert_flat
 from scraper.utils.telegram import MessageType, TelegramBot
 from scraper.flat import SS_Flat
 from scraper.parsers.base import BaseParser
@@ -111,12 +111,19 @@ class SSParser(BaseParser):
         try:
             district_info = next(
                 (district for district in self.preferred_districts if district.name == district_name), None)
-            if district_info:
-                flat.validate(district_info)
-                await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS)
-                logger.info(f"Sending from ss: {flat.id}")
+            if district_info is None:
+                return
+            flat.validate(district_info)
         except ValueError:
             return
+
+        # NOTE: this is a temporary solution to send flats to users whil we are testing the system
+        try:
+            users = await get_users()
+            for user in users:
+                await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
+        except Exception as e:
+            logger.error(e)
 
     async def scrape(self) -> None:
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(

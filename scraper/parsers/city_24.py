@@ -5,11 +5,10 @@ import aiohttp
 from fake_useragent import UserAgent
 
 from scraper.config import City24ParserConfig, District, Source
-from scraper.core.postgres import Postgres, Type
-from scraper.database.crud import flat_exists, upsert_flat
+from scraper.database.crud import flat_exists, get_users, upsert_flat
 from scraper.flat import City24_Flat
 from scraper.parsers.base import BaseParser
-from scraper.utils.telegram import TelegramBot
+from scraper.utils.telegram import MessageType, TelegramBot
 from scraper.schemas.city_24 import City24ResFlatDict
 from scraper.utils.logger import logger
 from scraper.utils.meta import get_start_of_day
@@ -112,13 +111,19 @@ class City24Parser(BaseParser):
         try:
             district_info = next(
                 (district for district in self.preferred_districts if district.name == district_name), None)
-            if district_info:
-                logger.warning(f"District {district_name} found")
-                flat.validate(district_info)
-                await self.telegram_bot.send_flat_msg_with_limiter(flat, Type.FLATS)
-                logger.info(f"Sending from city24: {flat.id}")
+            if district_info is None:
+                return
+            flat.validate(district_info)
         except ValueError:
             return
+
+        # NOTE: this is a temporary solution to send flats to users whil we are testing the system
+        try:
+            users = await get_users()
+            for user in users:
+                await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
+        except Exception as e:
+            logger.error(e)
 
     def get_district_name(self, flat_data) -> str:
         if flat_data["address"]["district"] is None:
