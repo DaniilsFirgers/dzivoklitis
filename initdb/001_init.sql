@@ -37,12 +37,15 @@ CREATE TABLE IF NOT EXISTS favourites(
     flat_id VARCHAR(255) NOT NULL,
     tg_user_id INT NOT NULL,
     FOREIGN KEY(flat_id) REFERENCES flats(flat_id) ON DELETE CASCADE -- ON DELETE CASCADE means that if a flat is deleted, all references to it will be deleted as well
+    FOREIGN KEY(tg_user_id) REFERENCES users(tg_user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS users(
     id SERIAL PRIMARY KEY,
     tg_user_id INT NOT NULL,
     username VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- create indexes
