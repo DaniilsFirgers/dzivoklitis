@@ -66,7 +66,7 @@ class TelegramBot:
 
     async def send_favorites(self, message: types.Message):
         """Sends the list of favorite flats to the user."""
-        favorites = await get_favourites(self.user_id)
+        favorites = await get_favourites(message.from_user.id)
         if not favorites:
             return await self.bot.send_message(
                 chat_id=self.user_id,
@@ -74,7 +74,8 @@ class TelegramBot:
             )
         await self.send_message("Here are your favorite flats ❤️")
         for counter, favorite in enumerate(favorites, start=1):
-            print(favorite)
+            flat = Flat.from_orm(favorite)
+            await self.send_flat_message(flat, Type.FAVOURITES, counter)
 
     async def send_flat_message(self, flat: Flat, type: Type, counter: str = None):
         """Puts a flat message into the rate limiter queue."""
@@ -135,7 +136,7 @@ class TelegramBot:
             f"<b>Cena €</b>: {flat.price}\n"
         )
 
-        return f"*Numurs*: {counter}\n" + base_msg if counter is not None else base_msg
+        return f"<b>Numurs</b>: {counter}\n" + base_msg if counter is not None else base_msg
 
     async def start_polling(self):
         """Start an asyncio task to poll the bot."""
