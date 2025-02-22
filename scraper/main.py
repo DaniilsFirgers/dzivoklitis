@@ -45,9 +45,6 @@ class FlatsParser(metaclass=SingletonMeta):
 
         self.scheduler.configure(timezone=pytz.timezone("Europe/Riga"))
 
-        await self.telegram_bot.send_message(
-            f"Started *{self.config.name}* scraper v*{self.config.version}*")
-
         ss = SSParser(self.telegram_bot, self.config.districts,
                       self.config.parsers.ss)
 
@@ -75,7 +72,7 @@ class FlatsParser(metaclass=SingletonMeta):
     async def cleanup(self):
         self.postgres.close()
         self.scheduler.shutdown()
-        await self.telegram_bot.send_message("Performed cleanup")
+        await self.telegram_bot.send_text_msg_with_limiter("Performed cleanup")
 
 
 if __name__ == "__main__":
