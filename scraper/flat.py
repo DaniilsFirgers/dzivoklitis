@@ -11,7 +11,7 @@ from scraper.schemas.shared import Coordinates, DealType
 from scraper.utils.logger import logger
 from scraper.utils.meta import get_coordinates, try_parse_float, try_parse_int
 from fake_useragent import UserAgent
-from scraper.database.models import Flat as FlatORM
+from scraper.database.models import Flat as FlatORM, Price
 import pyvips
 
 
@@ -122,7 +122,30 @@ class Flat():
             series=self.series,
             location=f"POINT({self.longitude} {self.latitude})",
             image_data=self.image_data,
+        )
 
+    @staticmethod
+    def from_orm(flat: FlatORM):
+        last_update: Price = max(
+            flat.prices, key=lambda x: x.updated_at, default=None)
+        return Flat(
+            url=flat.url,
+            district=flat.district,
+            source=Source(flat.source),
+            deal_type=flat.deal_type,
+            id=flat.flat_id,
+            price=last_update.price if last_update else 0,
+            rooms=flat.rooms,
+            street=flat.street,
+            area=flat.area,
+            floor=flat.floor,
+            floors_total=flat.floors_total,
+            series=flat.series,
+            price_per_m2=int(last_update.price /
+                             flat.area) if last_update else 0,
+            latitude=0,  # currently we dont care about coordinates
+            longitude=0,  # currently we dont care about coordinates
+            image_data=flat.image_data
         )
 
 
