@@ -1,12 +1,15 @@
 from enum import Enum
 import os
 import asyncio
+from datetime import datetime
+from typing import List
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.types import BufferedInputFile
 from aiogram.filters import Command
 from aiogram.types import BotCommand
 from scraper.database.crud import add_favorite, remove_favorite, get_favourites
+from scraper.database.models import Price
 from scraper.flat import Flat
 from scraper.utils.logger import logger
 from scraper.utils.limiter import RateLimiterQueue
@@ -99,9 +102,13 @@ class TelegramBot:
         """Puts a flat message into the rate limiter queue."""
         await self.rate_limiter.add_request(lambda: self._send_flat_message(flat, type, tg_user_id, counter))
 
+    async def send_flat_update_msg_with_limiter(self, flat: Flat, prev_prices: List[Price], tg_user_id: int):
+        """Puts a flat update message into the rate limiter queue."""
+        await self.rate_limiter.add_request(lambda: self._send_flat_update_message(flat, prev_prices, tg_user_id))
+
     async def _send_flat_message(self, flat: Flat, type: MessageType, tg_user_id: int, counter: str = None):
         """Sends a flat's information message to the user."""
-        msg_txt = self.flat_to_msg(flat, counter)
+        text = self.flat_to_msg(flat, counter)
 
         inline_keyboard = [
             [
@@ -125,7 +132,7 @@ class TelegramBot:
         if flat.image_data is None:
             await self.bot.send_message(
                 chat_id=tg_user_id,
-                text=msg_txt,
+                text=text,
                 parse_mode="HTML",
                 reply_markup=markup if markup else None
             )
@@ -135,17 +142,74 @@ class TelegramBot:
             await self.bot.send_photo(
                 chat_id=tg_user_id,
                 photo=photo,
-                caption=msg_txt,
+                caption=text,
                 parse_mode="HTML",
                 reply_markup=markup if markup else None
             )
 
-    def flat_update_to_msg(self, flat: Flat) -> str:
-        pass
+    async def _send_flat_update_message(self, flat: Flat, prev_prices: List[Price], tg_user_id: int):
+        """Sends a flat's update message to the user."""
+
+        text = self.flat_update_to_msg(flat, prev_prices)
+
+        inline_keyboard = [
+            [
+                types.InlineKeyboardButton(text="🔍Aplūkot URL", url=flat.url)
+            ],
+            [types.InlineKeyboardButton(
+                text="❤️ Pievienot favorītiem", callback_data=f"add_to_favorites:{flat.id}")
+             ]
+        ]
+
+        markup = types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+        if flat.image_data is None:
+            await self.bot.send_message(
+                chat_id=tg_user_id,
+                text=text,
+                parse_mode="HTML",
+                reply_markup=markup if markup else None
+            )
+        else:
+            photo = BufferedInputFile(
+                flat.image_data, filename=f"{flat.id}.jpg")
+            await self.bot.send_photo(
+                chat_id=tg_user_id,
+                photo=photo,
+                caption=text,
+                parse_mode="HTML",
+                reply_markup=markup if markup else None
+            )
+
+    def flat_update_to_msg(self, flat: Flat, prev_prices: List[Price]) -> str:
+        # sort prices by updated_at in descending order
+        prev_prices = sorted(
+            prev_prices, key=lambda x: x.updated_at, reverse=True)
+
+        price_history_text = ("<b>Cenu vēsture: </b>\n")
+        for i, prev_price in enumerate(prev_prices, start=1):
+            formatted_date = datetime.strftime(
+                prev_price.updated_at, "%d.%m.%Y")
+            price_history_text += f"    <i>{formatted_date}</i>: {prev_price.price}€\n"
+
+        text = (
+            f"<b>🔥 Cenu izmaiņa! 🔥</b>\n"
+            f"<b>Avots</b>: {flat.source.value}\n"
+            f"<b>Apkaime</b>: {flat.district}\n"
+            f"<b>Iela</b>: {flat.street}\n"
+            f"<b>Sērija</b>: {flat.series}\n"
+            f"<b>Istabas</b>: {flat.rooms}\n"
+            f"<b>Platība</b>: {flat.area}\n"
+            f"<b>Stāvs</b>: {flat.floor}/{flat.floors_total}\n"
+            f"<b>Cena €/m²</b>: {flat.price_per_m2}\n"
+            f"<b>Cena €</b>: {flat.price}\n"
+            f"{price_history_text}"
+        )
+        return text
 
     def flat_to_msg(self, flat: Flat, counter: int = None) -> str:
         """Generates the message text for a flat."""
-        base_msg = (
+        text = (
             f"<b>Avots</b>: {flat.source.value}\n"
             f"<b>Apkaime</b>: {flat.district}\n"
             f"<b>Iela</b>: {flat.street}\n"
@@ -157,7 +221,7 @@ class TelegramBot:
             f"<b>Cena €</b>: {flat.price}\n"
         )
 
-        return f"<b>Numurs</b>: {counter}\n" + base_msg if counter is not None else base_msg
+        return f"<b>Numurs</b>: {counter}\n" + text if counter is not None else text
 
     async def start_polling(self):
         """Start an asyncio task to poll the bot."""
