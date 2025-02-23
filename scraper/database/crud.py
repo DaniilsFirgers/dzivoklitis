@@ -25,6 +25,18 @@ async def flat_exists(flat_id: str, price: int) -> bool:
         return result.scalar_one_or_none() is not None
 
 
+async def get_flat(flat_id: str) -> Flat | None:
+    """Get a flat by its id together with its prices."""
+    async with postgres_instance.SessionLocal() as db:
+        query = (
+            select(Flat)
+            .options(joinedload(Flat.prices))
+            .where(Flat.flat_id == flat_id)
+        )
+        result = await db.execute(query)
+        return result.unique().scalar_one_or_none()
+
+
 async def add_favorite(flat_id: str, tg_user_id: int) -> bool:
     """Add a favorite if it does not exist. Returns True if added, False if already exists."""
     async with postgres_instance.SessionLocal() as db:
