@@ -4,12 +4,12 @@ from typing import List
 from bs4 import BeautifulSoup, ResultSet, Tag
 
 from scraper.config import District, Source, SsParserConfig
-from scraper.database.crud import flat_exists, get_users, upsert_flat
+from scraper.database.crud import flat_exists, get_users, upsert_flat, get_flat
 from scraper.utils.telegram import MessageType, TelegramBot
 from scraper.flat import SS_Flat
 from scraper.parsers.base import BaseParser
 from scraper.utils.logger import logger
-from scraper.utils.meta import get_coordinates
+from scraper.utils.meta import find_flat_price, get_coordinates
 
 
 class SSParser(BaseParser):
@@ -94,11 +94,19 @@ class SSParser(BaseParser):
         # flat.add_coordinates(await get_coordinates(flat.street, self.city_name))
 
         try:
-            already_in_db = await flat_exists(flat.id, flat.price)
-            if already_in_db:
-                return
+            existing_flat = await get_flat(flat.id)
         except Exception as e:
             logger.error(e)
+            return
+
+        # Two options here
+        # 1. existing_price is none -> flat is new
+        # 2. existing_price is not none -> flat is existing, but need to check if price has changed
+        if existing_flat is not None:
+            matched_price = find_flat_price(flat.price, existing_flat.prices)
+
+        # if flat already exists and price is the same, skip
+        if existing_flat is not None and matched_price is not None:
             return
 
         try:
@@ -117,11 +125,14 @@ class SSParser(BaseParser):
         except ValueError:
             return
 
-        # NOTE: this is a temporary solution to send flats to users whil we are testing the system
+        # NOTE: this is a temporary solution to send flats to users while we are testing the system
         try:
             users = await get_users()
             for user in users:
-                await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
+                if existing_flat is None:
+                    await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
+                elif existing_flat is not None and matched_price is None:
+                    await self.telegram_bot.send_flat_update_msg_with_limiter(flat, existing_flat.prices, tg_user_id=user.tg_user_id)
         except Exception as e:
             logger.error(e)
 

@@ -5,13 +5,13 @@ import aiohttp
 from fake_useragent import UserAgent
 
 from scraper.config import City24ParserConfig, District, Source
-from scraper.database.crud import flat_exists, get_users, upsert_flat
+from scraper.database.crud import get_flat, get_users, upsert_flat
 from scraper.flat import City24_Flat
 from scraper.parsers.base import BaseParser
 from scraper.utils.telegram import MessageType, TelegramBot
 from scraper.schemas.city_24 import City24ResFlatDict
 from scraper.utils.logger import logger
-from scraper.utils.meta import get_start_of_day
+from scraper.utils.meta import find_flat_price, get_start_of_day
 
 
 class City24Parser(BaseParser):
@@ -94,13 +94,20 @@ class City24Parser(BaseParser):
         flat.image_data = await flat.download_img(img_url, session)
 
         try:
-            alrerady_in_db = await flat_exists(flat.id, flat.price)
-            if alrerady_in_db:
-                return
+            existing_flat = await get_flat(flat.id)
         except Exception as e:
             logger.error(e)
             return
 
+        # Two options here
+        # 1. existing_price is none -> flat is new
+        # 2. existing_price is not none -> flat is existing, but need to check if price has changed
+        if existing_flat is not None:
+            matched_price = find_flat_price(flat.price, existing_flat.prices)
+
+        # if flat already exists and price is the same, skip
+        if existing_flat is not None and matched_price is not None:
+            return
         try:
             flat_orm = flat.to_orm()
             await upsert_flat(flat_orm, flat.price)
@@ -117,11 +124,14 @@ class City24Parser(BaseParser):
         except ValueError:
             return
 
-        # NOTE: this is a temporary solution to send flats to users whil we are testing the system
+        # NOTE: this is a temporary solution to send flats to users while we are testing the system
         try:
             users = await get_users()
             for user in users:
-                await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
+                if existing_flat is None:
+                    await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
+                elif existing_flat is not None and matched_price is None:
+                    await self.telegram_bot.send_flat_update_msg_with_limiter(flat, existing_flat.prices, tg_user_id=user.tg_user_id)
         except Exception as e:
             logger.error(e)
 
