@@ -2,3 +2,6 @@
 
 # ignore pycache
 __pycache__/
+
+# ignore 002_init.sql
+initdb/002_init.sql
