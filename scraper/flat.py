@@ -1,10 +1,10 @@
 import hashlib
-import io
 import re
-
+import pyvips
 import aiohttp
+
 from scraper.config import District, Source
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, Optional
 from scraper.schemas.city_24 import City24ResFlatDict
 from scraper.schemas.shared import Coordinates, DealType
@@ -12,7 +12,6 @@ from scraper.utils.logger import logger
 from scraper.utils.meta import get_coordinates, try_parse_float, try_parse_int
 from fake_useragent import UserAgent
 from scraper.database.models import Flat as FlatORM, Price
-import pyvips
 
 
 @dataclass
