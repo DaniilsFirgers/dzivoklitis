@@ -102,12 +102,11 @@ class City24Parser(BaseParser):
         # Two options here
         # 1. existing_price is none -> flat is new
         # 2. existing_price is not none -> flat is existing, but need to check if price has changed
-        if existing_flat is not None:
-            matched_price = find_flat_price(flat.price, existing_flat.prices)
 
-        # if flat already exists and price is the same, skip
-        if existing_flat is not None and matched_price is not None:
-            return
+        if existing_flat:
+            matched_price = find_flat_price(flat.price, existing_flat.prices)
+            if matched_price:
+                return
         try:
             flat_orm = flat.to_orm()
             await upsert_flat(flat_orm, flat.price)

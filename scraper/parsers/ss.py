@@ -91,6 +91,7 @@ class SSParser(BaseParser):
 
         flat.image_data = await flat.download_img(img_url, session)
 
+        # TODO: move this to a separate task that will limit the amount of requests
         # flat.add_coordinates(await get_coordinates(flat.street, self.city_name))
 
         try:
@@ -102,12 +103,11 @@ class SSParser(BaseParser):
         # Two options here
         # 1. existing_price is none -> flat is new
         # 2. existing_price is not none -> flat is existing, but need to check if price has changed
-        if existing_flat is not None:
-            matched_price = find_flat_price(flat.price, existing_flat.prices)
 
-        # if flat already exists and price is the same, skip
-        if existing_flat is not None and matched_price is not None:
-            return
+        if existing_flat:
+            matched_price = find_flat_price(flat.price, existing_flat.prices)
+            if matched_price:
+                return
 
         try:
             flat_orm = flat.to_orm()
