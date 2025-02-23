@@ -1,3 +1,4 @@
+import os
 import toml
 import asyncio
 import pytz
@@ -43,6 +44,11 @@ class FlatsParser(metaclass=SingletonMeta):
         await postgres_instance.init_db()
 
         self.scheduler.configure(timezone=pytz.timezone("Europe/Riga"))
+
+        admin_tg_id = os.getenv("ADMIN_TELEGRAM_ID")
+        if admin_tg_id:
+            await self.telegram_bot.send_text_msg_with_limiter(
+                f"Bot with version {self.config.version} started", admin_tg_id)
 
         ss = SSParser(self.telegram_bot, self.config.districts,
                       self.config.parsers.ss)
