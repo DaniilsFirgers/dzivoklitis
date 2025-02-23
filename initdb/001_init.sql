@@ -43,21 +43,19 @@ CREATE TABLE IF NOT EXISTS users(
 CREATE TABLE IF NOT EXISTS favourites(
     id SERIAL PRIMARY KEY, -- SERIAL is a type for auto-incrementing integers
     flat_id VARCHAR(255) NOT NULL,
-    tg_user_id INT NOT NULL,
+    tg_user_id BIGINT NOT NULL,
     FOREIGN KEY(flat_id) REFERENCES flats(flat_id) ON DELETE CASCADE, -- ON DELETE CASCADE means that if a flat is deleted, all references to it will be deleted as well
     FOREIGN KEY(tg_user_id) REFERENCES users(tg_user_id) ON DELETE CASCADE
 );
 
 -- create indexes
 CREATE INDEX idx_district ON flats(district);
-CREATE INDEX idx_price ON prices(price);
-CREATE INDEX idx_updated_at ON prices(updated_at);
 CREATE INDEX idx_flat_id ON prices(flat_id);
-CREATE INDEX idx_area ON flats(area);
+CREATE INDEX idx_fav_flat_id ON favourites(flat_id);
+CREATE INDEX idx_fav_user_id ON favourites(tg_user_id);
+CREATE INDEX ids_user_id ON users(tg_user_id);
 create INDEX idx_flats_location ON flats USING GIST (location);
 
--- create composite index
-CREATE INDEX idx_district_series ON flats(district, series);
 -- create constraints
 ALTER TABLE prices ADD CONSTRAINT chk_price CHECK (price > 0);
 ALTER TABLE flats ADD CONSTRAINT chk_area CHECK (area > 0);
