@@ -21,16 +21,16 @@ TODO:
 
 - [x] Check favorites functionality and wrap it into the rate limiter queue
 - [ ] Add correct indexes
-- [ ] Add users table (for now no registration)
-- [ ] UI with buttons
+- [x] Add users table (for now no registration)
+- [x] UI with buttons
 - [ ] Rotating bots ???
-- [ ] Add default user to the database, they will receive same ads
+- [x] Add default user to the database, they will receive same ads
 - [ ] Get previous favorites and store them correctly
 - [ ] Create backup for Postgres data
 - [ ] Free proxies for requests
 - [ ] User registration? Do i need UI or go with telegram app?
-- [ ] Notification when price changes detected
-- [ ] Show history of price changes
+- [x] Notification when price changes detected
+- [x] Show history of price changes
 - [ ] Add zip.lv scraper
 - [ ] Add mm.lv scraper
 - [ ] Add pp.lv scraper
