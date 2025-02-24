@@ -60,10 +60,14 @@ class FlatsParser(metaclass=SingletonMeta):
 
         loop = asyncio.get_running_loop()
 
-        # self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-        #     ss.run(), loop), "cron", hour="9,12,15,18,21", minute=12, name="SS")
+        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+            ss.run(), loop), "cron", hour="9,12,15,18,21", minute=12, name="SS")
+
+        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+            city24.run(), loop), "cron", hour="9,12,15,18,21", minute=12, name="City24")
 
         self.scheduler.start()
+
         for job in self.scheduler.get_jobs():
             logger.info(
                 f"Job {job.id} scheduled to run at {job.next_run_time}")
