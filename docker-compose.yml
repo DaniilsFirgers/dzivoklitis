@@ -15,11 +15,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
-      TELEGRAM_USER_ID: ${TELEGRAM_USER_ID}
       TELEGRAM_TOKEN : ${TELEGRAM_TOKEN}
+      ADMIN_TELEGRAM_ID : ${ADMIN_TELEGRAM_ID}
 
     volumes:
-      - ./config.toml:/app/config.toml 
+      - ./configs/config.toml:/app/config.toml 
+      - ./configs/settings.json:/app/settings.json
 
     command: python3.10 -u /app/scraper/main.py
     networks:

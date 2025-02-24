@@ -1,12 +1,17 @@
 name = "Flats web scraper"
-version = "1.0.1"
+version = "2.0.1"
 
 [parsers]
 [parsers.ss]
-city_name = "Riga"
-deal_type = "sell"
-name = "ss"
-timeframe = "today-2"
+city_name = "Riga" 
+deal_type = "Pārdod" # sell / hand_over (rent)
+name = "ss" 
+timeframe = "today-2" # today / today-2 / today-5
+
+[parsers.city24]
+city_code = 245396 
+deal_type = "Pārdod" # sale / rent
+name = "city24" 
 
 [telegram]
 sleep_time = 0.5 # 1000ms
@@ -16,7 +21,7 @@ max_price_per_m2 = 2500
 min_floor = 2
 min_m2 = 40
 min_price_per_m2 = 1100
-name = "centre"
+name = "Centrs"
 rooms = 2
 skip_last_floor = true
 
@@ -25,7 +30,7 @@ max_price_per_m2 = 1800
 min_floor = 3
 min_m2 = 50
 min_price_per_m2 = 750
-name = "imanta"
+name = "Imanta"
 rooms = 2
 skip_last_floor = false
 
@@ -34,7 +39,7 @@ max_price_per_m2 = 1900
 min_floor = 3
 min_m2 = 50
 min_price_per_m2 = 750
-name = "purvciems"
+name = "Purvciems"
 rooms = 2
 skip_last_floor = true
 
@@ -43,7 +48,7 @@ max_price_per_m2 = 2000
 min_floor = 2
 min_m2 = 45
 min_price_per_m2 = 850
-name = "mezhapark"
+name = "Mežaparks"
 rooms = 2
 skip_last_floor = false
 
@@ -52,7 +57,7 @@ max_price_per_m2 = 1700
 min_floor = 3
 min_m2 = 50
 min_price_per_m2 = 750
-name = "plyavnieki"
+name = "Pļavnieki"
 rooms = 2
 skip_last_floor = true
 
@@ -61,6 +66,33 @@ max_price_per_m2 = 2300
 min_floor = 3
 min_m2 = 45
 min_price_per_m2 = 750
-name = "teika"
+name = "Teika"
+rooms = 2
+skip_last_floor = false
+
+[[districts]]
+max_price_per_m2 = 2300
+min_floor = 3
+min_m2 = 45
+min_price_per_m2 = 750
+name = "Āgenskalns"
+rooms = 2
+skip_last_floor = false
+
+[[districts]]
+max_price_per_m2 = 2500
+min_floor = 3
+min_m2 = 45
+min_price_per_m2 = 750
+name = "Skanste"
+rooms = 2
+skip_last_floor = false
+
+[[districts]]
+max_price_per_m2 = 2200
+min_floor = 3
+min_m2 = 45
+min_price_per_m2 = 750
+name = "Ziepniekkalns"
 rooms = 2
 skip_last_floor = false

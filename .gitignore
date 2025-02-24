@@ -3,5 +3,5 @@
 # ignore pycache
 __pycache__/
 
-#igoner possible tiny db documents
-*.json
+# ignore 002_init.sql
+initdb/002_init.sql

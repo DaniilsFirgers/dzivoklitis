@@ -1,5 +1,10 @@
 FROM python:3.10-slim
 
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    libvips-dev \
+    && rm -rf /var/lib/apt/lists/*  # Clean up to reduce image size
+
 WORKDIR /app
 
 COPY requirements.txt .

@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Literal
+from typing import Dict, List, Literal
+
+################################# Scraper Config #################################
 
 
 class Source(Enum):
@@ -17,9 +19,17 @@ class SsParserConfig:
     timeframe: Literal["today", "today-2", "today-5"]
 
 
+@dataclass(frozen=True)
+class City24ParserConfig:
+    name: str
+    city_code: int  # Riga = 245396
+    deal_type: Literal["sale", "rent"]
+
+
 @dataclass
 class ParserConfigs:
     ss: SsParserConfig
+    city24: City24ParserConfig
 
 
 @dataclass(frozen=True)
@@ -45,3 +55,19 @@ class Config:
     parsers: ParserConfigs
     telegram: TelegramConfig
     districts: List[District]
+
+
+################################ Platform Settings ################################
+
+@dataclass
+class PlatformMapping:
+    reference: Dict[str, str]  # [id, name]
+    ss: Dict[str, str]  # [platform_id, id]
+    city24: Dict[str, str]  # [platform_id, id]
+
+
+@dataclass()
+class Settings:
+    districts: PlatformMapping
+    deal_types: PlatformMapping
+    flat_series: PlatformMapping
