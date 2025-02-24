@@ -19,21 +19,15 @@ At the moment cron jobs are set to run at 9,12,15,18 and 21, but can be changed 
 
 TODO:
 
-- [x] Check favorites functionality and wrap it into the rate limiter queue
-- [ ] Add correct indexes
-- [x] Add users table (for now no registration)
-- [x] UI with buttons
-- [ ] Rotating bots ???
-- [x] Add default user to the database, they will receive same ads
-- [ ] Get previous favorites and store them correctly
-- [ ] Create backup for Postgres data
-- [ ] Free proxies for requests
-- [ ] User registration? Do i need UI or go with telegram app?
-- [x] Notification when price changes detected
-- [x] Show history of price changes
+- [ ] Think of rotating bots that can handle more message simultaneously
+- [ ] Test renting case
+- [ ] How can I handle user registration and filters submission?
+- [ ] Create a cron for Postgres database dump
+- [ ] Use free ratating proxies to spread requests
 - [ ] Add zip.lv scraper
 - [ ] Add mm.lv scraper
 - [ ] Add pp.lv scraper
+  - [ ] Create json map for districts and flat series
+  - [ ] Contruct correct queries with filters
 - [ ] Add varianti.lv scraper
-- [ ] Projects map
-- [ ] For ss populate locations in another task
+- [ ] Create a separate task to populate locations for SS scraper
