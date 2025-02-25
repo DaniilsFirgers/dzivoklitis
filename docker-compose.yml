@@ -24,7 +24,7 @@ services:
 
     command: python3.10 -u /app/scraper/main.py
     networks:
-      - flats-pooler
+      - flats-analyzer
 
   postgres:
     image: postgis/postgis:13-3.3 
@@ -45,10 +45,25 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./initdb:/docker-entrypoint-initdb.d
     networks:
-      - flats-pooler
+      - flats-analyzer
+
+  # ngrok:
+  #   image: wernight/ngrok
+  #   container_name: ngrok
+  #   ports:
+  #     - "4040:4040"
+  #   environment:
+  #     NGROK_PORT: 4040
+  #     NGROK_PROTOCOL: http
+  #     NGROK_AUTH: ${NGROK_AUTHTOKEN}
+  #   command: ngrok http --domain=${NGROK_DOMAIN} telegram-webapp:80
+  #   depends_on:
+  #     - flats-pooler
+  #   networks:
+  #     - flats-analyzer
     
 networks:
-  flats-pooler:
+  flats-analyzer:
     driver: bridge
 
 volumes:
