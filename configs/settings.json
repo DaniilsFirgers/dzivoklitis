@@ -11,6 +11,10 @@
     "city24": {
       "rent": "1",
       "sale": "2"
+    },
+    "pp": {
+      "1": "2",
+      "5": "1"
     }
   },
   "flat_series": {
@@ -66,6 +70,9 @@
       "special_project": "14",
       "new_project": "15",
       "renovated": "17"
+    },
+    "pp": {
+      "2027": "10"
     }
   },
   "districts": {
