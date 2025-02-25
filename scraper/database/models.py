@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List
-from sqlalchemy import Column, String, Integer, SmallInteger, DECIMAL, ForeignKey, Text, TIMESTAMP,  func
+from sqlalchemy import BigInteger, Column, String, Integer, SmallInteger, DECIMAL, ForeignKey, Text, TIMESTAMP,  func
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import relationship, Mapped
 from geoalchemy2 import Geometry
@@ -64,7 +64,7 @@ class Favourite(postgres_instance.Base):
     flat_id = Column(String(255), ForeignKey(
         "flats.flat_id", ondelete="CASCADE"), nullable=False)
 
-    tg_user_id = Column(Integer, nullable=False)
+    tg_user_id = Column(BigInteger, nullable=False)
 
     # Relationship back to Flat
     flat = relationship("Flat", back_populates="favourites")
@@ -74,7 +74,7 @@ class User(postgres_instance.Base):
     __tablename__ = TableType.USERS.value
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tg_user_id = Column(Integer, nullable=False)
+    tg_user_id = Column(BigInteger, nullable=False)
     username = Column(String(50), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=func.now(), nullable=False)
