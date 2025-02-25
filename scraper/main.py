@@ -61,10 +61,10 @@ class FlatsParser(metaclass=SingletonMeta):
         loop = asyncio.get_running_loop()
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            ss.run(), loop), "cron", hour="9,12,15,18,21", minute=12, name="SS")
+            ss.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="SS")
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            city24.run(), loop), "cron", hour="9,12,15,18,21", minute=12, name="City24")
+            city24.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="City24")
 
         self.scheduler.start()
 
