@@ -23,6 +23,7 @@ class City24Parser(BaseParser):
         self.telegram_bot = telegram_bot
         self.preferred_districts = preferred_districts
         self.user_agent = UserAgent()
+        # if there are less than 50, then there is no need to go to the next page
         self.items_per_page = 50
 
     async def scrape(self) -> None:
