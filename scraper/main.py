@@ -9,7 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from scraper.parsers.city_24 import City24Parser
 from scraper.utils.logger import logger
 from scraper.utils.meta import SingletonMeta
-from scraper.parsers.ss import SSParser
+from scraper.parsers.ss import SludinajumuServissParser
 from scraper.utils.limiter import RateLimiterQueue
 from scraper.database.postgres import postgres_instance
 
@@ -50,8 +50,8 @@ class FlatsParser(metaclass=SingletonMeta):
             await self.telegram_bot.send_text_msg_with_limiter(
                 f"Bot with version {self.config.version} started", admin_tg_id)
 
-        ss = SSParser(self.telegram_bot, self.config.districts,
-                      self.config.parsers.ss)
+        ss = SludinajumuServissParser(self.telegram_bot, self.config.districts,
+                                      self.config.parsers.ss)
 
         city24 = City24Parser(
             self.telegram_bot, self.config.districts, self.config.parsers.city24)
