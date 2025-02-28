@@ -12,7 +12,7 @@ from scraper.utils.logger import logger
 from scraper.utils.meta import find_flat_price, get_coordinates
 
 
-class SSParser(BaseParser):
+class SludinajumuServissParser(BaseParser):
     def __init__(self, telegram_bot: TelegramBot, preferred_districts: List[District], config: SsParserConfig):
 
         super().__init__(Source.SS, config.deal_type)

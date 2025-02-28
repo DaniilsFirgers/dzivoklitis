@@ -9,7 +9,7 @@ from scraper.parsers.base import BaseParser
 from scraper.utils.telegram import TelegramBot
 
 
-class PpParser(BaseParser):
+class PardosanasPortalsParser(BaseParser):
     def __init__(self, telegram_bot: TelegramBot,
                  preferred_districts: List[District], config: PpParserConfig
                  ):
