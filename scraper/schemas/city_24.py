@@ -18,7 +18,7 @@ class AttributesDict(TypedDict, total=False):
     ON_LAST_FLOOR: bool
 
 
-class City24ResFlatDict(TypedDict, total=False):
+class Flat(TypedDict, total=False):
     main_image: MainImageDict
     date_published: str
     latitude: float
