@@ -80,7 +80,7 @@ class Flat():
                 # Automatically keeps aspect ratio
                 image = image.thumbnail_image(303)
                 resized_image_file = image.write_to_buffer(
-                    ".jpg")  # Save as JPEG
+                    ".jpg")
 
                 return resized_image_file
         except Exception as e:
@@ -217,7 +217,8 @@ class City24_Flat(Flat):
 
         return UNKNOWN_DISTRICT
 
-    def format_img_url(self, url: str) -> str:
+    def format_img_url(self) -> str:
+        url = self.flat["main_image"]["url"]
         return url.replace("{fmt:em}", "14")
 
     def format_url(self, id: str) -> str:
@@ -262,9 +263,10 @@ class PP_Flat(Flat):
         prices = self.flat["prices"]
         targetPrice = next(
             (price for price in prices if price["priceType"]["id"] == priceType.value), None)
-        if targetPrice is not None:
+        if targetPrice is None:
             return 0
-        return try_parse_int(targetPrice["value"])
+        print("qwe", targetPrice["value"])
+        return try_parse_float(targetPrice["value"])
 
     def get_text_attribute(self, filter_value: FilterValue) -> int:
         """Get attributes from the flat filters"""
@@ -278,8 +280,13 @@ class PP_Flat(Flat):
         attr = next(
             (attr for attr in self.flat["adFilterValues"] if attr["filter"]["id"] == PP_FILTER_MAP["series"]["id"]), None)
         if attr is None:
-            return unified_flat_series[PP_FILTER_MAP["series"]["default"]]
+            return PP_FILTER_MAP["series"]["default"]
 
-        if attr["value"]["id"] in unified_flat_series:
-            return unified_flat_series[attr["value"]["id"]]
+        if str(attr["value"]["id"]) in unified_flat_series:
+            return unified_flat_series[str(attr["value"]["id"])]
         return UNKNOWN_DISTRICT
+
+    def format_img_url(self) -> str:
+        extension = self.flat["thumbnail"]["extension"]
+        storage_id = self.flat["thumbnail"]["storageId"]
+        return f"https://img.pp.lv/storage/{storage_id[0:2]}/{storage_id[2:4]}/{storage_id}/32.{extension}"
