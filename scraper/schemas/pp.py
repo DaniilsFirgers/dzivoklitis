@@ -52,11 +52,18 @@ class Price(TypedDict, total=False):
     priceHistory: List[PriceHistory]
 
 
+class Thumbnail(TypedDict):
+    extension: str
+    storageId: str
+
+
 class Flat(TypedDict, total=False):
     publicLocation: PublicLocation
     frontUrl: str
     adFilterValues: List[AdFilterValue]
     prices: List[Price]
+    publishDate: str
+    thumbnail: Thumbnail
 
 
 class Content(TypedDict, total=False):
