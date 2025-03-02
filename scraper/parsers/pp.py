@@ -6,11 +6,13 @@ from typing import Dict, List
 import aiohttp
 from fake_useragent import UserAgent
 from scraper.config import District, PpParserConfig, Source
+from scraper.database.crud import get_flat
 from scraper.flat import PP_Flat
 from scraper.parsers.base import UNKNOWN_DISTRICT, BaseParser
 from scraper.schemas.pp import City24ResFlatsDict,  Flat, PriceType
 from scraper.schemas.shared import DealType
 from scraper.utils.logger import logger
+from scraper.utils.meta import find_flat_price
 from scraper.utils.telegram import TelegramBot
 
 
@@ -48,9 +50,6 @@ class PardosanasPortalsParser(BaseParser):
             price_types = self.get_prices_types(self.target_deal_type)
             page = 1
 
-            logger.warning(
-                f"Scraping {self.source} for {self.target_deal_type} in {self.city_code}")
-
             while True:
                 params = {
                     "region": self.city_code,
@@ -62,9 +61,6 @@ class PardosanasPortalsParser(BaseParser):
                     "currentPage": page,
                 }
 
-                logger.warning(
-                    f"Requesting {self.source} with params {params} on page {page}")
-
                 headers = {
                     "User-Agent": self.user_agent.random,
                     "Accept-Encoding": "gzip, deflate, br, zstd",
@@ -72,8 +68,6 @@ class PardosanasPortalsParser(BaseParser):
                 }
                 try:
                     async with session.get(url, headers=headers, params=params, timeout=10) as response:
-                        logger.warning(
-                            f"Requesting {self.source} with params {params} on page {page}")
                         if response.status != 200:
                             logger.error(
                                 f"Request failed with status code {response.status} - {response}")
@@ -86,6 +80,7 @@ class PardosanasPortalsParser(BaseParser):
                             logger.warning(
                                 f"No data found for {self.source} on page {page}, stopping")
 
+                        # TODO: need to limit whihc ads I am parsing (only todaty's)
                         await self.process_flats(data, session)
 
                         if len(data["content"]["data"]) < self.items_per_page:
@@ -104,14 +99,33 @@ class PardosanasPortalsParser(BaseParser):
 
     async def _process_flat(self, flat_data: Flat,  session: aiohttp.ClientSession):
         """Process and validate each flat"""
+
         district_name = self.get_district_name(flat_data)
         flat = PP_Flat(district_name, self.target_deal_type, flat_data)
+
         try:
             flat.create(self.flat_series)
-            logger.info(f"Processing flat {flat.id}")
+            logger.info(
+                f"Processing flat {flat.id} - {flat.district} - {flat.series}")
         except Exception as e:
             logger.error(f"Error creating flat: {e}")
             return
+
+        img_url = flat.format_img_url()
+        # flat.image_data = await flat.download_img(img_url, session)
+
+        # try:
+        #     existing_flat = await get_flat(flat.id)
+        # except Exception as e:
+        #     logger.error(e)
+        #     return
+
+        # if existing_flat:
+        #     matched_price = find_flat_price(flat.price, existing_flat.prices)
+        #     if matched_price:
+        #         return
+
+        logger.info(f"Flat {flat} created successfully")
 
     def get_district_name(self, flat: Flat) -> str:
         """Get district name from district id"""
