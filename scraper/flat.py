@@ -6,12 +6,14 @@ import aiohttp
 from scraper.config import District, Source
 from dataclasses import dataclass
 from typing import Dict, Optional
-from scraper.schemas.city_24 import City24ResFlatDict
+from scraper.parsers.base import UNKNOWN_DISTRICT
+from scraper.schemas.city_24 import Flat as City24Flat
 from scraper.schemas.shared import Coordinates, DealType
 from scraper.utils.logger import logger
 from scraper.utils.meta import get_coordinates, try_parse_float, try_parse_int
 from fake_useragent import UserAgent
 from scraper.database.models import Flat as FlatORM, Price
+from scraper.schemas.pp import FilterValue, Flat as PpFlat, PriceType
 
 
 @dataclass
@@ -149,7 +151,7 @@ class Flat():
 
 
 class SS_Flat(Flat):
-    def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: str):
+    def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: DealType):
         super().__init__(url=url, district=district_name,
                          source=Source.SS, deal_type=deal_type)
         self.raw_info = raw_info
@@ -182,7 +184,7 @@ class SS_Flat(Flat):
 
 
 class City24_Flat(Flat):
-    def __init__(self, district_name: str,  deal_type: str, flat: City24ResFlatDict):
+    def __init__(self, district_name: str,  deal_type: DealType, flat: City24Flat):
         super().__init__(url="", district=district_name,
                          source=Source.CITY_24, deal_type=deal_type)
         self.flat = flat
@@ -207,9 +209,13 @@ class City24_Flat(Flat):
         return self.flat["address"]["street_name"]
 
     def get_series_type(self, unified_flat_series: Dict[str, str]) -> str:
-        if self.flat["attributes"].get("HOUSE_TYPE") is not None and len(self.flat["attributes"]["HOUSE_TYPE"]) > 0:
+        if self.flat["attributes"].get("HOUSE_TYPE") is None or len(self.flat["attributes"]["HOUSE_TYPE"]) <= 0:
+            return UNKNOWN_DISTRICT
+
+        if self.flat["attributes"]["HOUSE_TYPE"][0] in unified_flat_series:
             return unified_flat_series[self.flat["attributes"]["HOUSE_TYPE"][0]]
-        return "Nezināms"
+
+        return UNKNOWN_DISTRICT
 
     def format_img_url(self, url: str) -> str:
         return url.replace("{fmt:em}", "14")
@@ -219,3 +225,61 @@ class City24_Flat(Flat):
             return f"https://www.city24.lv/real-estate/apartments-for-rent/riga/{id}"
 
         return f"https://www.city24.lv/real-estate/apartments-for-sale/riga/{id}"
+
+
+PP_FILTER_MAP: Dict[str, FilterValue] = {
+    "area": {"id": 123, "default": 10},
+    "rooms": {"id": 121, "default": 1},
+    "floor": {"id": 125, "default": 1},
+    "floors_total": {"id": 139, "default": 1},
+    "series": {"id": 127, "default": UNKNOWN_DISTRICT},
+}
+
+
+class PP_Flat(Flat):
+    def __init__(self, district_name: str,  deal_type: str, flat: PpFlat):
+        super().__init__(url="", district=district_name,
+                         source=Source.PP, deal_type=deal_type)
+        self.flat = flat
+
+    def create(self, unified_flat_series: Dict[str, str]):
+        self.url = self.flat["frontUrl"]
+        self.price = self.get_price(PriceType.SELL_FULL)
+        self.price_per_m2 = self.get_price(PriceType.SELL_SQUARE)
+        self.area = self.get_text_attribute(PP_FILTER_MAP["area"])
+        self.rooms = self.get_text_attribute(PP_FILTER_MAP["rooms"])
+        self.street = self.flat["publicLocation"]["address"]
+        self.floor = self.get_text_attribute(PP_FILTER_MAP["floor"])
+        self.floors_total = self.get_text_attribute(
+            PP_FILTER_MAP["floors_total"])
+        self.series = self.get_series_type(unified_flat_series)
+        self.id = self.create_id()
+        self.add_coordinates(Coordinates(
+            latitude=self.flat["publicLocation"]["coordinateY"], longitude=self.flat["publicLocation"]["coordinateX"]))
+
+    def get_price(self, priceType: PriceType) -> int:
+        """Get the price of the flat"""
+        prices = self.flat["prices"]
+        targetPrice = next(
+            (price for price in prices if price["priceType"]["id"] == priceType.value), None)
+        if targetPrice is not None:
+            return 0
+        return try_parse_int(targetPrice["value"])
+
+    def get_text_attribute(self, filter_value: FilterValue) -> int:
+        """Get attributes from the flat filters"""
+        attr = next(
+            (attr for attr in self.flat["adFilterValues"] if attr["filter"]["id"] == filter_value["id"]), None)
+        if attr is None:
+            return filter_value["default"]
+        return try_parse_int(attr["textValue"])
+
+    def get_series_type(self, unified_flat_series: Dict[str, str]) -> str:
+        attr = next(
+            (attr for attr in self.flat["adFilterValues"] if attr["filter"]["id"] == PP_FILTER_MAP["series"]["id"]), None)
+        if attr is None:
+            return unified_flat_series[PP_FILTER_MAP["series"]["default"]]
+
+        if attr["value"]["id"] in unified_flat_series:
+            return unified_flat_series[attr["value"]["id"]]
+        return UNKNOWN_DISTRICT
