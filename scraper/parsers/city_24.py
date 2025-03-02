@@ -94,7 +94,7 @@ class City24Parser(BaseParser):
         except Exception as e:
             logger.error(f"Error creating flat: {e}")
             return
-        img_url = flat.format_img_url(flat_data["main_image"]["url"])
+        img_url = flat.format_img_url()
         flat.image_data = await flat.download_img(img_url, session)
 
         try:
@@ -102,10 +102,6 @@ class City24Parser(BaseParser):
         except Exception as e:
             logger.error(e)
             return
-
-        # Two options here
-        # 1. existing_price is none -> flat is new
-        # 2. existing_price is not none -> flat is existing, but need to check if price has changed
 
         if existing_flat:
             matched_price = find_flat_price(flat.price, existing_flat.prices)
