@@ -1,4 +1,5 @@
-from typing import List, TypedDict
+from enum import Enum
+from typing import List, TypedDict, Union
 
 
 class AdFilter(TypedDict, total=False):
@@ -6,8 +7,13 @@ class AdFilter(TypedDict, total=False):
     name: str
 
 
+class FilterValue(TypedDict, total=False):
+    id: int
+
+
 class AdFilterValue(TypedDict, total=False):
     textValue: int | str
+    value: FilterValue
     filter: AdFilter
 
 
@@ -29,16 +35,46 @@ class PublicLocation(TypedDict, total=False):
     region: Region
 
 
+class PriceType(TypedDict):
+    id: int
+    name: str
+
+
+class PriceHistory(TypedDict):
+    value: str
+    timestamp: str
+    priceType: PriceType
+
+
+class Price(TypedDict, total=False):
+    value: str
+    priceType: PriceType
+    priceHistory: List[PriceHistory]
+
+
 class Flat(TypedDict, total=False):
     publicLocation: PublicLocation
     frontUrl: str
     adFilterValues: List[AdFilterValue]
+    prices: List[Price]
 
 
 class Content(TypedDict, total=False):
     data: List[Flat]
+    count: int
 
 
 class City24ResFlatsDict(TypedDict, total=False):
     content: Content
-    count: int
+
+
+class FilterValue(TypedDict):
+    id: int
+    default: Union[int, str]
+
+
+class PriceType(Enum):
+    SELL_FULL = 1
+    SELL_SQUARE = 15
+    RENT_FULL = 3
+    RENT_SQUARE = 5
