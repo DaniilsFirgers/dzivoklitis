@@ -22,6 +22,7 @@ TODO:
 - [ ] Think of rotating bots that can handle more message simultaneously
 - [ ] Test renting case
 - [ ] How can I handle user registration and filters submission?
+- [ ] Add deal type to database docuemnts
 - [ ] Create a cron for Postgres database dump
 - [ ] Use free ratating proxies to spread requests
 - [ ] Add zip.lv scraper
