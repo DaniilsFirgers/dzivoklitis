@@ -25,7 +25,8 @@ def try_parse_int(value: str) -> int:
     """Try to parse a string to an integer, return 0 if it fails"""
     try:
         return int(value)
-    except ValueError:
+    except ValueError as e:
+        logger.error(f"Error parsing int: {e}")
         return 0
 
 
@@ -33,7 +34,8 @@ def try_parse_float(value: str) -> float:
     """Try to parse a string to a float, return 0.0 if it fails."""
     try:
         return float(value)
-    except ValueError:
+    except ValueError as e:
+        logger.error(f"Error parsing float: {e}")
         return 0.0
 
 
