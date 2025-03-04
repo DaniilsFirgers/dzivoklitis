@@ -19,9 +19,11 @@ At the moment cron jobs are set to run at 9,12,15,18 and 21, but can be changed 
 
 TODO:
 
+- [ ] write error logs to file
 - [ ] Think of rotating bots that can handle more message simultaneously
 - [ ] Test renting case
 - [ ] How can I handle user registration and filters submission?
+- [ ] Add deal type to database docuemnts
 - [ ] Create a cron for Postgres database dump
 - [ ] Use free ratating proxies to spread requests
 - [ ] Add zip.lv scraper

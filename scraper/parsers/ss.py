@@ -12,7 +12,7 @@ from scraper.utils.logger import logger
 from scraper.utils.meta import find_flat_price, get_coordinates
 
 
-class SSParser(BaseParser):
+class SludinajumuServissParser(BaseParser):
     def __init__(self, telegram_bot: TelegramBot, preferred_districts: List[District], config: SsParserConfig):
 
         super().__init__(Source.SS, config.deal_type)
@@ -20,7 +20,7 @@ class SSParser(BaseParser):
         self.preferred_districts = preferred_districts
         self.look_back_arg = config.timeframe
         self.telegram_bot = telegram_bot
-        self.semaphore = asyncio.Semaphore(20)
+        self.semaphore = asyncio.Semaphore(15)
 
     async def fetch_page(self, session: aiohttp.ClientSession, url: str, retries: int = 3, delay: int = 1) -> str:
         for attempt in range(retries):
@@ -138,7 +138,7 @@ class SSParser(BaseParser):
 
     async def scrape(self) -> None:
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(
-                limit_per_host=10, keepalive_timeout=40)) as session:
+                limit_per_host=7, keepalive_timeout=40)) as session:
             tasks = [asyncio.ensure_future(self.scrape_district(session, platform_district_name, internal_district_name))
                      for platform_district_name, internal_district_name in self.districts.items()]
             await asyncio.gather(*tasks)

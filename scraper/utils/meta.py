@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timezone
 from typing import List, Optional
+from zoneinfo import ZoneInfo
 from fake_useragent import UserAgent
 from geopy.geocoders import Photon
 
@@ -25,7 +26,8 @@ def try_parse_int(value: str) -> int:
     """Try to parse a string to an integer, return 0 if it fails"""
     try:
         return int(value)
-    except ValueError:
+    except ValueError as e:
+        logger.error(f"Error parsing int: {e}")
         return 0
 
 
@@ -33,7 +35,8 @@ def try_parse_float(value: str) -> float:
     """Try to parse a string to a float, return 0.0 if it fails."""
     try:
         return float(value)
-    except ValueError:
+    except ValueError as e:
+        logger.error(f"Error parsing float: {e}")
         return 0.0
 
 
@@ -80,3 +83,21 @@ def find_flat_price(curr_price: int, prev_prices: List[Price]) -> Optional[Price
     price_dict = {
         price.price: price for price in prev_prices}
     return price_dict.get(curr_price)
+
+
+def valid_date_published(date_published_str: str) -> bool:
+    """Check if date pubklished is after start of the day in EET"""
+
+    now = datetime.now(ZoneInfo("Europe/Riga"))
+    start_of_day = datetime(now.year, now.month, now.day,
+                            0, 0, 0, tzinfo=ZoneInfo("Europe/Riga"))
+    date_published = datetime.fromisoformat(date_published_str)
+
+    return date_published >= start_of_day
+
+
+def convert_dt_to_utc(dt_str: str) -> datetime:
+    """Convert datetime string to UTC"""
+    dt = datetime.fromisoformat(dt_str)
+    dt_utc = dt.astimezone(timezone.utc)
+    return dt_utc

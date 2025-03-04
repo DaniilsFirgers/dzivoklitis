@@ -1,17 +1,21 @@
+from datetime import datetime
 import hashlib
 import re
+from zoneinfo import ZoneInfo
 import pyvips
 import aiohttp
 
 from scraper.config import District, Source
 from dataclasses import dataclass
 from typing import Dict, Optional
-from scraper.schemas.city_24 import City24ResFlatDict
+from scraper.parsers.base import UNKNOWN
+from scraper.schemas.city_24 import Flat as City24Flat
 from scraper.schemas.shared import Coordinates, DealType
 from scraper.utils.logger import logger
-from scraper.utils.meta import get_coordinates, try_parse_float, try_parse_int
+from scraper.utils.meta import convert_dt_to_utc, get_coordinates, try_parse_float, try_parse_int
 from fake_useragent import UserAgent
 from scraper.database.models import Flat as FlatORM, Price
+from scraper.schemas.pp import FilterValue, Flat as PpFlat, PriceType
 
 
 @dataclass
@@ -23,7 +27,7 @@ class Flat():
     id: Optional[str] = None
     price: Optional[int] = None
     rooms: Optional[int] = None
-    street: Optional[str] = None
+    street: Optional[str] = UNKNOWN
     area: Optional[float] = None
     floor: Optional[int] = None
     floors_total: Optional[int] = None
@@ -32,6 +36,7 @@ class Flat():
     latitude: Optional[float] = 0
     longitude: Optional[float] = 0
     image_data: Optional[bytes] = b""
+    created_at: Optional[datetime] = datetime.now().astimezone(ZoneInfo("UTC"))
 
     def create(self):
         pass
@@ -78,7 +83,7 @@ class Flat():
                 # Automatically keeps aspect ratio
                 image = image.thumbnail_image(303)
                 resized_image_file = image.write_to_buffer(
-                    ".jpg")  # Save as JPEG
+                    ".jpg")
 
                 return resized_image_file
         except Exception as e:
@@ -149,7 +154,7 @@ class Flat():
 
 
 class SS_Flat(Flat):
-    def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: str):
+    def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: DealType):
         super().__init__(url=url, district=district_name,
                          source=Source.SS, deal_type=deal_type)
         self.raw_info = raw_info
@@ -168,6 +173,7 @@ class SS_Flat(Flat):
         self.floor, self.floors_total = self.parse_floors(self.raw_info[3])
         self.series = unified_flat_series[self.raw_info[4]]
         self.id = self.create_id()
+        self.created_at = datetime.now().astimezone(ZoneInfo("UTC"))
 
     def parse_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
         try:
@@ -182,7 +188,7 @@ class SS_Flat(Flat):
 
 
 class City24_Flat(Flat):
-    def __init__(self, district_name: str,  deal_type: str, flat: City24ResFlatDict):
+    def __init__(self, district_name: str,  deal_type: DealType, flat: City24Flat):
         super().__init__(url="", district=district_name,
                          source=Source.CITY_24, deal_type=deal_type)
         self.flat = flat
@@ -200,18 +206,24 @@ class City24_Flat(Flat):
         self.id = self.create_id()
         self.add_coordinates(Coordinates(
             latitude=self.flat["latitude"], longitude=self.flat["longitude"]))
+        self.created_at = convert_dt_to_utc(self.flat["date_published"])
 
     def get_street_name(self) -> str:
         if self.flat["address"].get("house_number") is not None:
-            return f'{self.flat["address"]["street_name"]} {self.flat["address"]["house_number"]}'
-        return self.flat["address"]["street_name"]
+            return f'{self.flat["address"]["street_name"] or UNKNOWN} {self.flat["address"]["house_number"]}'
+        return self.flat["address"]["street_name"] or UNKNOWN
 
     def get_series_type(self, unified_flat_series: Dict[str, str]) -> str:
-        if self.flat["attributes"].get("HOUSE_TYPE") is not None and len(self.flat["attributes"]["HOUSE_TYPE"]) > 0:
-            return unified_flat_series[self.flat["attributes"]["HOUSE_TYPE"][0]]
-        return "Nezināms"
+        if self.flat["attributes"].get("HOUSE_TYPE") is None or len(self.flat["attributes"]["HOUSE_TYPE"]) <= 0:
+            return UNKNOWN
 
-    def format_img_url(self, url: str) -> str:
+        if self.flat["attributes"]["HOUSE_TYPE"][0] in unified_flat_series:
+            return unified_flat_series[self.flat["attributes"]["HOUSE_TYPE"][0]]
+
+        return UNKNOWN
+
+    def format_img_url(self) -> str:
+        url = self.flat["main_image"]["url"]
         return url.replace("{fmt:em}", "14")
 
     def format_url(self, id: str) -> str:
@@ -219,3 +231,86 @@ class City24_Flat(Flat):
             return f"https://www.city24.lv/real-estate/apartments-for-rent/riga/{id}"
 
         return f"https://www.city24.lv/real-estate/apartments-for-sale/riga/{id}"
+
+
+PP_FILTER_MAP: Dict[str, FilterValue] = {
+    "area": {"id": 123, "default": 0},
+    "rooms": {"id": 121, "default": 0},
+    "floor": {"id": 125, "default": 0},
+    "floors_total": {"id": 139, "default": 1},
+    "series": {"id": 127, "default": UNKNOWN},
+}
+
+
+class PP_Flat(Flat):
+    def __init__(self, district_name: str,  deal_type: DealType, flat: PpFlat):
+        super().__init__(url="", district=district_name,
+                         source=Source.PP, deal_type=deal_type)
+        self.flat = flat
+        self.price_types = self.get_price_types()
+
+    def create(self, unified_flat_series: Dict[str, str]):
+        self.url = self.flat["frontUrl"]
+        self.price = self._get_price(self.price_types[0])
+        self.price_per_m2 = self._get_price(self.price_types[1])
+        self.area = try_parse_float(
+            self._get_text_attribute(PP_FILTER_MAP["area"]))
+        self.rooms = try_parse_int(
+            self._get_text_attribute(PP_FILTER_MAP["rooms"]))
+        self.street = self.flat["publicLocation"]["address"] or UNKNOWN
+        self.floor = try_parse_int(
+            self._get_text_attribute(PP_FILTER_MAP["floor"]))
+        self.floors_total = try_parse_int(self._get_text_attribute(
+            PP_FILTER_MAP["floors_total"]))
+        self.series = self._get_series_type(unified_flat_series)
+        self.id = self.create_id()
+        self.add_coordinates(self._get_coordinates())
+        self.created_at = convert_dt_to_utc(self.flat["publishDate"])
+
+    def _get_price(self, priceType: PriceType) -> int:
+        """Get the price of the flat"""
+        targetPrice = next(
+            (price for price in self.flat["prices"] if price["priceType"]["id"] == priceType.value), None)
+        if targetPrice is None:
+            return 0
+        return try_parse_float(targetPrice["value"])
+
+    def _get_text_attribute(self, filter_value: FilterValue) -> str:
+        """Get attributes from the flat filters"""
+        attr = next(
+            (attr for attr in self.flat["adFilterValues"] if attr["filter"]["id"] == filter_value["id"]), None)
+        if attr is None:
+            return filter_value["default"]
+        return attr["textValue"]
+
+    def _get_series_type(self, unified_flat_series: Dict[str, str]) -> str:
+        attr = next(
+            (attr for attr in self.flat["adFilterValues"] if attr["filter"]["id"] == PP_FILTER_MAP["series"]["id"]), None)
+        if attr is None:
+            return PP_FILTER_MAP["series"]["default"]
+
+        if str(attr["value"]["id"]) in unified_flat_series:
+            return unified_flat_series[str(attr["value"]["id"])]
+        return UNKNOWN
+
+    def get_historic_prices(self) -> list[tuple[str, float]]:
+        targetPrice = next(
+            (price for price in self.flat["prices"] if price["priceType"]["id"] == self.price_types[0].value), None)
+        if targetPrice is None:
+            return []
+        return [(convert_dt_to_utc(price["timestamp"]), try_parse_float(price["value"])) for price in targetPrice["priceHistory"]]
+
+    def format_img_url(self) -> str:
+        extension = self.flat["thumbnail"]["extension"]
+        storage_id = self.flat["thumbnail"]["storageId"]
+        return f"https://img.pp.lv/storage/{storage_id[0:2]}/{storage_id[2:4]}/{storage_id}/32.{extension}"
+
+    def get_price_types(self) -> tuple[PriceType, PriceType]:
+        if self.deal_type == DealType.RENT:
+            return PriceType.RENT_FULL, PriceType.RENT_SQUARE
+        return PriceType.SELL_FULL, PriceType.SELL_SQUARE
+
+    def _get_coordinates(self) -> Coordinates:
+        latitude = self.flat["publicLocation"]["coordinateY"] if self.flat["publicLocation"]["coordinateY"] is not None else 0
+        longitude = self.flat["publicLocation"]["coordinateX"] if self.flat["publicLocation"]["coordinateX"] is not None else 0
+        return Coordinates(latitude=latitude, longitude=longitude)

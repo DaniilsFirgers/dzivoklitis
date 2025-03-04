@@ -13,6 +13,11 @@ city_code = 245396
 deal_type = "Pārdod" # sale / rent
 name = "city24" 
 
+[parsers.pp]
+city_code = 85 
+deal_type = "Pārdod" # 1 / 5
+name = "pp" 
+
 [telegram]
 sleep_time = 0.5 # 1000ms
 

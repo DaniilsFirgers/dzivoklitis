@@ -9,6 +9,7 @@ class Source(Enum):
     SS = "ss"
     MM = "mm"
     CITY_24 = "city24"
+    PP = "pp"
 
 
 @dataclass(frozen=True)
@@ -26,10 +27,18 @@ class City24ParserConfig:
     deal_type: Literal["sale", "rent"]
 
 
+@dataclass(frozen=True)
+class PpParserConfig:
+    name: str
+    city_code: int
+    deal_type: Literal["1", "5"]
+
+
 @dataclass
 class ParserConfigs:
     ss: SsParserConfig
     city24: City24ParserConfig
+    pp: PpParserConfig
 
 
 @dataclass(frozen=True)
@@ -64,6 +73,7 @@ class PlatformMapping:
     reference: Dict[str, str]  # [id, name]
     ss: Dict[str, str]  # [platform_id, id]
     city24: Dict[str, str]  # [platform_id, id]
+    pp: Dict[str, str]  # [platform_id, id]
 
 
 @dataclass()

@@ -7,9 +7,9 @@ from fake_useragent import UserAgent
 from scraper.config import City24ParserConfig, District, Source
 from scraper.database.crud import get_flat, get_users, upsert_flat
 from scraper.flat import City24_Flat
-from scraper.parsers.base import BaseParser
+from scraper.parsers.base import UNKNOWN, BaseParser
 from scraper.utils.telegram import MessageType, TelegramBot
-from scraper.schemas.city_24 import City24ResFlatDict
+from scraper.schemas.city_24 import Flat
 from scraper.utils.logger import logger
 from scraper.utils.meta import find_flat_price, get_start_of_day
 
@@ -23,6 +23,7 @@ class City24Parser(BaseParser):
         self.telegram_bot = telegram_bot
         self.preferred_districts = preferred_districts
         self.user_agent = UserAgent()
+        # if there are less than 50, then there is no need to go to the next page
         self.items_per_page = 50
 
     async def scrape(self) -> None:
@@ -61,26 +62,29 @@ class City24Parser(BaseParser):
                         if response.status != 200:
                             logger.error(
                                 f"Request failed with status code {response.status}")
-                            return
-                        flats: List[City24ResFlatDict] = await response.json()
+                            page += 1
+                            continue
+
+                        flats: List[Flat] = await response.json()
 
                         if not flats:
                             break
 
+                        #  TODO: move to a function
                         for flat in flats:
                             await self.process_flat(flat, session)
 
                         if len(flats) < self.items_per_page:
                             break
 
-                        page += 1
-
                 except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                     logger.error(
                         f"Error fetching data for {self.city_code} on page {page}: {e}")
-                    break  # Stop fetching if an error occurs
+                    break
 
-    async def process_flat(self, flat_data, session: aiohttp.ClientSession):
+                page += 1
+
+    async def process_flat(self, flat_data: Flat, session: aiohttp.ClientSession):
         """Process and validate each flat"""
         district_name = self.get_district_name(flat_data)
         flat = City24_Flat(district_name, self.target_deal_type, flat_data)
@@ -90,7 +94,7 @@ class City24Parser(BaseParser):
         except Exception as e:
             logger.error(f"Error creating flat: {e}")
             return
-        img_url = flat.format_img_url(flat_data["main_image"]["url"])
+        img_url = flat.format_img_url()
         flat.image_data = await flat.download_img(img_url, session)
 
         try:
@@ -98,10 +102,6 @@ class City24Parser(BaseParser):
         except Exception as e:
             logger.error(e)
             return
-
-        # Two options here
-        # 1. existing_price is none -> flat is new
-        # 2. existing_price is not none -> flat is existing, but need to check if price has changed
 
         if existing_flat:
             matched_price = find_flat_price(flat.price, existing_flat.prices)
@@ -134,13 +134,14 @@ class City24Parser(BaseParser):
         except Exception as e:
             logger.error(e)
 
-    def get_district_name(self, flat_data) -> str:
-        if flat_data["address"]["district"] is None:
-            return "Nezināms"
-        original = str(flat_data["address"]["district"]["id"])
-        district_name = self.districts.get(original)
+    def get_district_name(self, flat: Flat) -> str:
+        """Get district name from district id"""
+        if flat["address"]["district"] is None:
+            return UNKNOWN
+        original_district_id = str(flat["address"]["district"]["id"])
+        district_name = self.districts.get(original_district_id)
         if district_name is None:
             logger.warning(
-                f"Cannot map district with external id {original}")
-            return "Nezināms"
+                f"Cannot map district with external id {original_district_id}")
+            return UNKNOWN
         return district_name

@@ -5,6 +5,8 @@ import asyncio
 from scraper.config import PlatformMapping, Settings, Source
 from scraper.utils.logger import logger
 
+UNKNOWN = "Nezināms"
+
 
 class BaseParser:
     def __init__(self, source: Source, target_deal_type: str):
