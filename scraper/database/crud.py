@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy.future import select
 from scraper.database.models import Flat, Price, Favourite, User
 from scraper.database.postgres import postgres_instance
@@ -9,7 +10,18 @@ async def upsert_flat(flat: Flat, price: int) -> None:
     async with postgres_instance.SessionLocal() as db:
         async with db.begin():  # Auto rollback on failure
             await db.merge(flat)  # `merge` auto-handles inserts/updates
-            new_price = Price(flat_id=flat.flat_id, price=price)
+            new_price = Price(flat_id=flat.flat_id,
+                              price=price, updated_at=flat.created_at)
+            db.add(new_price)
+            await db.flush()
+
+
+async def upsert_price(flat_id: str, price: int, updated_at: datetime) -> None:
+    """Insert or update a price for a flat."""
+    async with postgres_instance.SessionLocal() as db:
+        async with db.begin():
+            new_price = Price(flat_id=flat_id, price=price,
+                              updated_at=updated_at)
             db.add(new_price)
             await db.flush()
 
