@@ -93,7 +93,7 @@ def valid_date_published(date_published_str: str) -> bool:
                             0, 0, 0, tzinfo=ZoneInfo("Europe/Riga"))
     date_published = datetime.fromisoformat(date_published_str)
 
-    return date_published >= start_of_day
+    return date_published > start_of_day
 
 
 def convert_dt_to_utc(dt_str: str) -> datetime:
