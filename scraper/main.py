@@ -61,21 +61,24 @@ class FlatsParser(metaclass=SingletonMeta):
         pp = PardosanasPortalsParser(self.telegram_bot, self.config.districts,
                                      self.config.parsers.pp)
 
-        await asyncio.gather(pp.run())
+        await asyncio.gather(ss.run(), city24.run(), pp.run())
 
         loop = asyncio.get_running_loop()
 
-        # self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-        #     ss.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="SS")
+        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+            ss.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="SS")
 
-        # self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-        #     city24.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="City24")
+        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+            city24.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="City24")
 
-        # self.scheduler.start()
+        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+            pp.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="PP")
 
-        # for job in self.scheduler.get_jobs():
-        #     logger.info(
-        #         f"Job {job.id} scheduled to run at {job.next_run_time}")
+        self.scheduler.start()
+
+        for job in self.scheduler.get_jobs():
+            logger.info(
+                f"Job {job.id} scheduled to run at {job.next_run_time}")
 
         try:
             while True:
