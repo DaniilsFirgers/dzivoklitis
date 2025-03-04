@@ -80,8 +80,13 @@ class PardosanasPortalsParser(BaseParser):
                             logger.warning(
                                 f"No data found for {self.source} on page {page}, stopping")
 
-                        # TODO: need to limit whihc ads I am parsing (only todaty's)
-                        await self.process_flats(data, session)
+                        need_break = await self.process_flats(data, session)
+
+                        if need_break:
+                            logger.info(
+                                f"Stopping scraping {self.source} for {self.target_deal_type} on page {page} as the date is too old"
+                            )
+                            break
 
                         if len(data["content"]["data"]) < self.items_per_page:
                             logger.warning(
@@ -93,10 +98,12 @@ class PardosanasPortalsParser(BaseParser):
                         f"Request to {self.source} failed with error {e}")
                 page += 1
 
-    async def process_flats(self, flats: City24ResFlatsDict, session: aiohttp.ClientSession):
+    async def process_flats(self, flats: City24ResFlatsDict, session: aiohttp.ClientSession) -> bool:
         for flat in flats["content"]["data"]:
-            # if not valid_date_published(flat["publishDate"]): # TODO: uncomment later
+            if not valid_date_published(flat["publishDate"]):
+                return True
             await self._process_flat(flat, session)
+        return False
 
     async def _process_flat(self, flat_data: Flat,  session: aiohttp.ClientSession):
         """Process and validate each flat"""
@@ -132,18 +139,6 @@ class PardosanasPortalsParser(BaseParser):
         except Exception as e:
             logger.error(e)
             return
-
-        #  NOTE: this is a TMP solution to insert historical prices
-        historical_prices = flat.get_historic_prices()
-        for price in historical_prices:
-            if price[1] == flat.price:
-                continue
-            try:
-                await upsert_price(flat.id, price[1], price[0]
-                                   )
-            except Exception as e:
-                logger.error(e)
-                continue
 
         try:
             district_info = next(
