@@ -7,7 +7,7 @@ from fake_useragent import UserAgent
 from scraper.config import City24ParserConfig, District, Source
 from scraper.database.crud import get_flat, get_users, upsert_flat
 from scraper.flat import City24_Flat
-from scraper.parsers.base import UNKNOWN_DISTRICT, BaseParser
+from scraper.parsers.base import UNKNOWN, BaseParser
 from scraper.utils.telegram import MessageType, TelegramBot
 from scraper.schemas.city_24 import Flat
 from scraper.utils.logger import logger
@@ -137,11 +137,11 @@ class City24Parser(BaseParser):
     def get_district_name(self, flat: Flat) -> str:
         """Get district name from district id"""
         if flat["address"]["district"] is None:
-            return UNKNOWN_DISTRICT
+            return UNKNOWN
         original_district_id = str(flat["address"]["district"]["id"])
         district_name = self.districts.get(original_district_id)
         if district_name is None:
             logger.warning(
                 f"Cannot map district with external id {original_district_id}")
-            return UNKNOWN_DISTRICT
+            return UNKNOWN
         return district_name
