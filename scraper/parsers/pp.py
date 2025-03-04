@@ -6,14 +6,14 @@ from typing import Dict, List
 import aiohttp
 from fake_useragent import UserAgent
 from scraper.config import District, PpParserConfig, Source
-from scraper.database.crud import get_flat
+from scraper.database.crud import get_flat, get_users, upsert_flat, upsert_price
 from scraper.flat import PP_Flat
-from scraper.parsers.base import UNKNOWN_DISTRICT, BaseParser
+from scraper.parsers.base import UNKNOWN, BaseParser
 from scraper.schemas.pp import City24ResFlatsDict,  Flat, PriceType
 from scraper.schemas.shared import DealType
 from scraper.utils.logger import logger
-from scraper.utils.meta import find_flat_price
-from scraper.utils.telegram import TelegramBot
+from scraper.utils.meta import find_flat_price, valid_date_published
+from scraper.utils.telegram import MessageType, TelegramBot
 
 
 class PardosanasPortalsParser(BaseParser):
@@ -47,13 +47,13 @@ class PardosanasPortalsParser(BaseParser):
                 return
 
             url = "https://apipub.pp.lv/lv/api_user/v1/categories/3811/lots"
-            price_types = self.get_prices_types(self.target_deal_type)
+            price_types = self.get_prices_types()
             page = 1
 
             while True:
                 params = {
                     "region": self.city_code,
-                    "action": self.get_action(self.target_deal_type),
+                    "action": self.get_action(),
                     "orderColumn": "orderDate",
                     "orderDirection": "DESC",
                     "priceTypes[0]": price_types[0],
@@ -95,6 +95,7 @@ class PardosanasPortalsParser(BaseParser):
 
     async def process_flats(self, flats: City24ResFlatsDict, session: aiohttp.ClientSession):
         for flat in flats["content"]["data"]:
+            # if not valid_date_published(flat["publishDate"]): # TODO: uncomment later
             await self._process_flat(flat, session)
 
     async def _process_flat(self, flat_data: Flat,  session: aiohttp.ClientSession):
@@ -112,39 +113,77 @@ class PardosanasPortalsParser(BaseParser):
             return
 
         img_url = flat.format_img_url()
-        # flat.image_data = await flat.download_img(img_url, session)
+        flat.image_data = await flat.download_img(img_url, session)
 
-        # try:
-        #     existing_flat = await get_flat(flat.id)
-        # except Exception as e:
-        #     logger.error(e)
-        #     return
+        try:
+            existing_flat = await get_flat(flat.id)
+        except Exception as e:
+            logger.error(e)
+            return
 
-        # if existing_flat:
-        #     matched_price = find_flat_price(flat.price, existing_flat.prices)
-        #     if matched_price:
-        #         return
+        if existing_flat:
+            matched_price = find_flat_price(flat.price, existing_flat.prices)
+            if matched_price:
+                return
 
-        logger.info(f"Flat {flat} created successfully")
+        try:
+            flat_orm = flat.to_orm()
+            await upsert_flat(flat_orm, flat.price)
+        except Exception as e:
+            logger.error(e)
+            return
+
+        #  NOTE: this is a TMP solution to insert historical prices
+        historical_prices = flat.get_historic_prices()
+        for price in historical_prices:
+            if price[1] == flat.price:
+                continue
+            try:
+                await upsert_price(flat.id, price[1], price[0]
+                                   )
+            except Exception as e:
+                logger.error(e)
+                continue
+
+        try:
+            district_info = next(
+                (district for district in self.preferred_districts if district.name == district_name), None)
+            if district_info is None:
+                return
+            flat.validate(district_info)
+        except ValueError:
+            return
+
+        # NOTE: this is a temporary solution to send flats to users while we are testing the system
+        try:
+            users = await get_users()
+            for user in users:
+                if existing_flat is None:
+                    await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
+                elif existing_flat is not None and matched_price is None:
+                    await self.telegram_bot.send_flat_update_msg_with_limiter(flat, existing_flat.prices, tg_user_id=user.tg_user_id)
+        except Exception as e:
+            logger.error(e)
 
     def get_district_name(self, flat: Flat) -> str:
         """Get district name from district id"""
         if flat["publicLocation"]["region"]["id"] is None:
-            return UNKNOWN_DISTRICT
-        original_district_id = str(flat["publicLocation"]["region"]["id"])
+            return UNKNOWN
+        original_district_id = str(
+            flat["publicLocation"]["region"]["id"])
         district_name = self.districts.get(original_district_id)
         if district_name is None:
             logger.warning(
                 f"Cannot map district with external id {original_district_id}")
-            return UNKNOWN_DISTRICT
+            return UNKNOWN
         return district_name
 
-    def get_prices_types(self, deal_type: str) -> List[int]:
-        if deal_type == DealType.RENT:
+    def get_prices_types(self) -> List[int]:
+        if self.target_deal_type == DealType.RENT:
             return [PriceType.RENT_FULL.value, PriceType.RENT_SQUARE.value]
         return [PriceType.SELL_FULL.value, PriceType.SELL_SQUARE.value]
 
-    def get_action(self, deal_type: str) -> int:
-        if deal_type == DealType.RENT:
+    def get_action(self) -> int:
+        if self.target_deal_type == DealType.RENT:
             return 5
         return 1
