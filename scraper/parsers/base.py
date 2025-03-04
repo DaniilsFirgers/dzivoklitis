@@ -5,7 +5,7 @@ import asyncio
 from scraper.config import PlatformMapping, Settings, Source
 from scraper.utils.logger import logger
 
-UNKNOWN_DISTRICT = "Nezināms"
+UNKNOWN = "Nezināms"
 
 
 class BaseParser:
