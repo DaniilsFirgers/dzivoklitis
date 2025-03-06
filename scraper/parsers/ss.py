@@ -79,7 +79,7 @@ class SludinajumuServissParser(BaseParser):
         await asyncio.gather(*tasks)
 
     async def process_flat(self, description: Tag, streets: tuple[Tag], img_url: str, district_name: str, session: aiohttp.ClientSession):
-        url = f"https://www.ss.lv/{description.get('href')}"
+        url = f"https://www.ss.lv{description.get('href')}"
         raw_info = [street.get_text() for street in streets]
 
         flat = SS_Flat(url, district_name, raw_info, self.target_deal_type)
@@ -138,7 +138,7 @@ class SludinajumuServissParser(BaseParser):
 
     async def scrape(self) -> None:
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(
-                limit_per_host=7, keepalive_timeout=40)) as session:
+                limit_per_host=5, keepalive_timeout=30)) as session:
             tasks = [asyncio.ensure_future(self.scrape_district(session, platform_district_name, internal_district_name))
                      for platform_district_name, internal_district_name in self.districts.items()]
             await asyncio.gather(*tasks)
