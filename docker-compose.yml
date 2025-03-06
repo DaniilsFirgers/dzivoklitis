@@ -21,6 +21,7 @@ services:
     volumes:
       - ./configs/config.toml:/app/config.toml 
       - ./configs/settings.json:/app/settings.json
+      - ./logs:/var/log/app
 
     command: python3.10 -u /app/scraper/main.py
     networks:
