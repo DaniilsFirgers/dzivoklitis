@@ -21,11 +21,11 @@ jobs:
           username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 
-      - name: Build and push Python Docker image
+      - name: Build and push Python Scraper Docker image
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: ./Dockerfile
+          file: ./Dockerfile.scraper
           push: true
           tags: ${{ secrets.DOCKER_REGISTRY_USERNAME }}/flats-parser:development
           cache-to: type=gha,mode=max

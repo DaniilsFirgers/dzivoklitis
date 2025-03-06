@@ -87,7 +87,7 @@ class Flat():
 
                 return resized_image_file
         except Exception as e:
-            logger.error(f"Error downloading image: {e}")
+            logger.error(f"Error downloading image: {e} - {img_url}")
             return None
 
     def add_coordinates(self, coordinates: Coordinates):
@@ -180,6 +180,9 @@ class SS_Flat(Flat):
             actual_floor_str, last_floor_str = floors.split("/")
             actual_floor = int(actual_floor_str)
             floors_total = int(last_floor_str)
+            # sometimes people write floors_total/actual_floor
+            if actual_floor > floors_total:
+                return floors_total, actual_floor
             return actual_floor, floors_total
         except ValueError:
             return None, None
@@ -200,13 +203,31 @@ class City24_Flat(Flat):
         self.price = try_parse_int((self.price_per_m2 * self.area))
         self.rooms = self.flat["room_count"]
         self.street = self.get_street_name()
-        self.floor = self.flat["attributes"]["FLOOR"]
-        self.floors_total = self.flat["attributes"]["TOTAL_FLOORS"]
+        self.floor, self.floors_total = self.get_floors()
         self.series = self.get_series_type(unified_flat_series)
         self.id = self.create_id()
         self.add_coordinates(Coordinates(
             latitude=self.flat["latitude"], longitude=self.flat["longitude"]))
         self.created_at = convert_dt_to_utc(self.flat["date_published"])
+
+    def get_floors(self) -> tuple[int, int]:
+        floor = self.flat["attributes"]["FLOOR"]
+        floors_total = self.flat["attributes"]["TOTAL_FLOORS"]
+
+        # handle different cases :)
+        if floor is None and floors_total is None:
+            return None, None
+
+        if floor is None:
+            return floors_total, floors_total
+
+        if floors_total is None:
+            return floor, floor
+
+        if floor > floors_total:
+            return floors_total, floor
+
+        return floor, floors_total
 
     def get_street_name(self) -> str:
         if self.flat["address"].get("house_number") is not None:

@@ -13,7 +13,7 @@ async def upsert_flat(flat: Flat, price: int) -> None:
             new_price = Price(flat_id=flat.flat_id,
                               price=price, updated_at=flat.created_at)
             db.add(new_price)
-            await db.flush()
+            await db.commit()
 
 
 async def upsert_price(flat_id: str, price: int, updated_at: datetime) -> None:
@@ -23,7 +23,7 @@ async def upsert_price(flat_id: str, price: int, updated_at: datetime) -> None:
             new_price = Price(flat_id=flat_id, price=price,
                               updated_at=updated_at)
             db.add(new_price)
-            await db.flush()
+            await db.commit()
 
 
 async def flat_exists(flat_id: str, price: int) -> bool:

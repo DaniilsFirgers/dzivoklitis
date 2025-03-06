@@ -15,13 +15,15 @@ class PostgresDb:
 
         self.url: str = f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
+        # echo=True will print all SQL queries
         self.engine: Engine = create_async_engine(
-            self.url, pool_pre_ping=True, echo=True)
+            self.url, pool_pre_ping=True, echo=False, pool_use_lifo=True)
 
         self.SessionLocal: sessionmaker[AsyncSession] = sessionmaker(
             bind=self.engine,
             class_=AsyncSession,
-            expire_on_commit=False
+            expire_on_commit=False,
+            autoflush=False
         )
 
         self.Base = declarative_base()

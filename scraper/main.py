@@ -87,7 +87,6 @@ class FlatsParser(metaclass=SingletonMeta):
             self.cleanup()
 
     async def cleanup(self):
-        self.postgres.close()
         self.scheduler.shutdown()
         await self.telegram_bot.send_text_msg_with_limiter("Performed cleanup")
 
