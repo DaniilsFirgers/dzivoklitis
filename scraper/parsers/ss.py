@@ -137,8 +137,9 @@ class SludinajumuServissParser(BaseParser):
             logger.error(e)
 
     async def scrape(self) -> None:
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(
-                limit_per_host=5, keepalive_timeout=30)) as session:
+        connector = aiohttp.TCPConnector(
+            limit_per_host=5, keepalive_timeout=20)
+        async with aiohttp.ClientSession(connector=connector) as session:
             tasks = [asyncio.ensure_future(self.scrape_district(session, platform_district_name, internal_district_name))
                      for platform_district_name, internal_district_name in self.districts.items()]
             await asyncio.gather(*tasks)
