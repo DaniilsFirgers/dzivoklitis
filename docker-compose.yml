@@ -17,13 +17,28 @@ services:
       POSTGRES_PORT: ${POSTGRES_PORT}
       TELEGRAM_TOKEN : ${TELEGRAM_TOKEN}
       ADMIN_TELEGRAM_ID : ${ADMIN_TELEGRAM_ID}
-
+      PYTHONUNBUFFERED: 1
     volumes:
       - ./configs/config.toml:/app/config.toml 
       - ./configs/settings.json:/app/settings.json
       - ./logs:/var/log/app
 
     command: python3.10 -u /app/scraper/main.py
+    networks:
+      - flats-analyzer
+  
+  flats-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend.dev
+    container_name: flats-backend
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - flats-analyzer
 
@@ -47,21 +62,31 @@ services:
       - ./initdb:/docker-entrypoint-initdb.d
     networks:
       - flats-analyzer
+    
+  flats-nginx:
+    image: nginx:latest
+    container_name: flats-nginx-proxy
+    volumes:
+      - ./configs/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8080:80"
+    depends_on:
+      - flats-backend
+    networks:
+      - flats-analyzer
 
-  # ngrok:
-  #   image: wernight/ngrok
-  #   container_name: ngrok
-  #   ports:
-  #     - "4040:4040"
-  #   environment:
-  #     NGROK_PORT: 4040
-  #     NGROK_PROTOCOL: http
-  #     NGROK_AUTH: ${NGROK_AUTHTOKEN}
-  #   command: ngrok http --domain=${NGROK_DOMAIN} telegram-webapp:80
-  #   depends_on:
-  #     - flats-pooler
-  #   networks:
-  #     - flats-analyzer
+  ngrok:
+    image: wernight/ngrok
+    container_name: ngrok
+    environment:
+      NGROK_PROTOCOL: http
+      NGROK_REGION: eu
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command: ngrok http --domain=${NGROK_DOMAIN} flats-nginx:80
+    depends_on:
+      - flats-nginx
+    networks:
+      - flats-analyzer
     
 networks:
   flats-analyzer:
