@@ -74,7 +74,7 @@ class User(postgres_instance.Base):
     __tablename__ = TableType.USERS.value
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tg_user_id = Column(BigInteger, nullable=False)
+    tg_user_id = Column(BigInteger, unique=True, nullable=False)
     username = Column(String(50), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True),
                         server_default=func.now(), nullable=False)
