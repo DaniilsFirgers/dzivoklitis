@@ -19,6 +19,7 @@ At the moment cron jobs are set to run at 9,12,15,18 and 21, but can be changed 
 
 TODO:
 
+- [ ] rename docker images
 - [ ] Test renting case
 - [ ] How can I handle user registration and filters submission?
 - [ ] Add deal type to database docuemnts
