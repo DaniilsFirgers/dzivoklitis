@@ -4,6 +4,7 @@ from backend.database.postgres import Base
 
 class User(Base):
     __tablename__ = "users"
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     tg_user_id = Column(BigInteger, unique=True, nullable=False)
     username = Column(String(50), nullable=True)
