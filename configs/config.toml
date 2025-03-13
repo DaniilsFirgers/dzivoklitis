@@ -3,7 +3,7 @@ version = "2.0.1"
 
 [parsers]
 [parsers.ss]
-city_name = "Riga" 
+city_name = "riga" 
 deal_type = "Pārdod" # sell / hand_over (rent)
 name = "ss" 
 timeframe = "today-2" # today / today-2 / today-5
