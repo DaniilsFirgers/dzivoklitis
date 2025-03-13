@@ -1,13 +1,7 @@
 from fastapi import FastAPI
+from backend.api.routes.filters import router as filter_router
 
-app = FastAPI()
-
-
-@app.get("/")
-def read_root():
-    return {"message": "Hello, World!"}
+app = FastAPI(title="Dzivoklitis API", version="0.1.0")
 
 
-@app.get("/greet/{name}")
-def read_item(name: str):
-    return {"message": f"Hello, {name}!"}
+app.include_router(filter_router, prefix="/filters", tags=["Filters"])
