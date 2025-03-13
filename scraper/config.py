@@ -78,6 +78,7 @@ class PlatformMapping:
 
 @dataclass()
 class Settings:
+    cities: PlatformMapping
     districts: PlatformMapping
     deal_types: PlatformMapping
     flat_series: PlatformMapping
