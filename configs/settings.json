@@ -1,4 +1,18 @@
 {
+  "cities": {
+    "reference":{
+      "1": "Rīga"
+    }, 
+    "ss": {
+      "riga": "1"
+    },
+    "city24": {
+      "245396": "1"
+    },
+    "pp": {
+      "85": "1"
+    }
+  },
   "deal_types": {
     "reference": {
       "1": "Izīrē",
