@@ -167,15 +167,24 @@ class SS_Flat(Flat):
         self.price_per_m2 = try_parse_int(
             re.sub(r"[^\d]", "", self.raw_info[5]))
         self.rooms = try_parse_int(self.raw_info[1])
-        cleaned_street = re.sub(r'\b[A-Za-z]{1,7}\.\s*', '', self.raw_info[0])
-        self.street = f"{cleaned_street} iela"
+        self.street = self.get_street()
         self.area = try_parse_float(self.raw_info[2])
-        self.floor, self.floors_total = self.parse_floors(self.raw_info[3])
+        self.floor, self.floors_total = self.get_floors(self.raw_info[3])
         self.series = unified_flat_series[self.raw_info[4]]
         self.id = self.create_id()
         self.created_at = datetime.now().astimezone(ZoneInfo("UTC"))
 
-    def parse_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
+    def get_street(self) -> str:
+        street = re.sub(r'\b[A-Za-z]{1,7}\.\s*|[^\w\s]$', '', self.raw_info[0])
+        street = street.strip()
+
+        words = street.split()
+        if len(words) > 1:
+            words.insert(1, "iela")
+
+        return " ".join(words)
+
+    def get_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
         try:
             actual_floor_str, last_floor_str = floors.split("/")
             actual_floor = int(actual_floor_str)
