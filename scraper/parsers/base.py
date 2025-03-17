@@ -12,14 +12,10 @@ class BaseParser:
     def __init__(self, source: Source, target_deal_type: str):
         self.source = source
         self.target_deal_type = target_deal_type
-        self.districts = {}
-        self.deal_types = {}
-        self.flat_series = {}
-        self.cities = {}
+        self.cities, self.districts, self.deal_types, self.flat_series = self.get_settings()
         self.semaphore = asyncio.Semaphore(15)
 
     async def run(self):
-        self.cities, self.districts, self.deal_types, self.flat_series = self.get_settings()
         asyncio.create_task(self.scrape())
 
     def get_settings(self) -> tuple[Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str]]:
