@@ -35,9 +35,9 @@ CREATE TABLE IF NOT EXISTS prices(
 CREATE TABLE IF NOT EXISTS users(
     id SERIAL PRIMARY KEY,
     tg_user_id BIGINT NOT NULL UNIQUE,
-    username VARCHAR(255) NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    username VARCHAR(30),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- create a table to store references to favourite flats
@@ -50,15 +50,19 @@ CREATE TABLE IF NOT EXISTS favourites(
 );
 
 -- create indexes
-CREATE INDEX idx_district ON flats(district);
-CREATE INDEX idx_flat_id ON prices(flat_id);
+CREATE INDEX idx_price_flat_id ON prices(flat_id);
+CREATE INDEX idx_price_flat_id_price ON prices(flat_id, price);
 CREATE INDEX idx_fav_flat_id ON favourites(flat_id);
-CREATE INDEX idx_fav_user_id ON favourites(tg_user_id);
-CREATE INDEX ids_user_id ON users(tg_user_id);
-create INDEX idx_flats_location ON flats USING GIST (location);
+CREATE INDEX idx_fav_tg_user_id ON favourites(tg_user_id);
+CREATE INDEX idx_user_tg_user_id ON users(tg_user_id);
+create INDEX idx_flat_location ON flats USING GIST (location);
 
 -- create constraints
-ALTER TABLE prices ADD CONSTRAINT chk_price CHECK (price > 0);
-ALTER TABLE flats ADD CONSTRAINT chk_area CHECK (area > 0);
-ALTER TABLE flats ADD CONSTRAINT chk_floor CHECK (floor <= floors_total);
-ALTER TABLE flats ADD CONSTRAINT chk_rooms CHECK (rooms > 0);
+ALTER TABLE prices ADD CONSTRAINT price_check CHECK (price > 0);
+ALTER TABLE flats ADD CONSTRAINT area_check CHECK (area > 0);
+ALTER TABLE flats ADD CONSTRAINT floors_total_check CHECK (floors_total > 0);
+ALTER TABLE flats ADD CONSTRAINT rooms_check CHECK (rooms > 0);
+ALTER TABLE flats ADD CONSTRAINT floor_vs_total_floor_check CHECK (floor <= floors_total);
+ALTER TABLE flats ADD CONSTRAINT floor_check CHECK (floor > 0);
+ALTER TABLE favourites ADD CONSTRAINT uq_fav_flat_id_tg_user_id UNIQUE (flat_id, tg_user_id);
+ALTER TABLE users ADD CONSTRAINT uq_user_tg_user_id UNIQUE (tg_user_id);
