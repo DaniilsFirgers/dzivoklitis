@@ -27,6 +27,7 @@ class Flat():
     id: Optional[str] = None
     price: Optional[int] = None
     rooms: Optional[int] = None
+    city: Optional[str] = None
     street: Optional[str] = UNKNOWN
     area: Optional[float] = None
     floor: Optional[int] = None
@@ -117,6 +118,7 @@ class Flat():
             source=self.source.value,
             deal_type=self.deal_type,
             url=self.url,
+            city=self.city,
             district=self.district,
             street=self.street,
             rooms=self.rooms,
@@ -135,6 +137,7 @@ class Flat():
         return Flat(
             url=flat.url,
             district=flat.district,
+            city=flat.city,
             source=Source(flat.source),
             deal_type=flat.deal_type,
             id=flat.flat_id,
@@ -154,10 +157,11 @@ class Flat():
 
 
 class SS_Flat(Flat):
-    def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: DealType):
+    def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: DealType, city: str):
         super().__init__(url=url, district=district_name,
                          source=Source.SS, deal_type=deal_type)
         self.raw_info = raw_info
+        self.city = city
 
     def create(self, unified_flat_series: Dict[str, str]):
         if len(self.raw_info) != 7:
@@ -200,10 +204,11 @@ class SS_Flat(Flat):
 
 
 class City24_Flat(Flat):
-    def __init__(self, district_name: str,  deal_type: DealType, flat: City24Flat):
+    def __init__(self, district_name: str,  deal_type: DealType, flat: City24Flat, city: str):
         super().__init__(url="", district=district_name,
                          source=Source.CITY_24, deal_type=deal_type)
         self.flat = flat
+        self.city = city
 
     def create(self, unified_flat_series: Dict[str, str]):
         self.url = self.format_url(self.flat["friendly_id"])
@@ -273,10 +278,11 @@ PP_FILTER_MAP: Dict[str, FilterValue] = {
 
 
 class PP_Flat(Flat):
-    def __init__(self, district_name: str,  deal_type: DealType, flat: PpFlat):
+    def __init__(self, district_name: str,  deal_type: DealType, flat: PpFlat, city: str):
         super().__init__(url="", district=district_name,
                          source=Source.PP, deal_type=deal_type)
         self.flat = flat
+        self.city = city
         self.price_types = self.get_price_types()
 
     def create(self, unified_flat_series: Dict[str, str]):
