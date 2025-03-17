@@ -16,7 +16,8 @@ class SludinajumuServissParser(BaseParser):
     def __init__(self, telegram_bot: TelegramBot, preferred_districts: List[District], config: SsParserConfig):
 
         super().__init__(Source.SS, config.deal_type)
-        self.city_name = config.city_name
+        self.original_city_name = config.city_name
+        self.city_name = self.cities[self.original_city_name]
         self.preferred_districts = preferred_districts
         self.look_back_arg = config.timeframe
         self.telegram_bot = telegram_bot
@@ -39,7 +40,7 @@ class SludinajumuServissParser(BaseParser):
         """Scrape all pages of a given district asynchronously with request limits."""
         platform_deal_type = next((k for k, v in self.deal_types.items()
                                    if v == self.target_deal_type), None)
-        base_url = f"https://www.ss.lv/real-estate/flats/{self.city_name.lower()}/{platform_district_name}/{self.look_back_arg}/{platform_deal_type}/"
+        base_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.look_back_arg}/{platform_deal_type}/"
 
         async with self.semaphore:
             first_page_html = await self.fetch_page(session, base_url)
@@ -58,7 +59,7 @@ class SludinajumuServissParser(BaseParser):
 
     async def scrape_page(self, session: aiohttp.ClientSession, platform_district_name: str, internal_district_name: str, deal_type: str, page: int):
         """Scrape a single page and extract flat details asynchronously."""
-        page_url = f"https://www.ss.lv/real-estate/flats/{self.city_name.lower()}/{platform_district_name}/{self.look_back_arg}/{deal_type}/page{page}.html"
+        page_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.look_back_arg}/{deal_type}/page{page}.html"
 
         async with self.semaphore:
             page_html = await self.fetch_page(session, page_url)
@@ -82,7 +83,8 @@ class SludinajumuServissParser(BaseParser):
         url = f"https://www.ss.lv{description.get('href')}"
         raw_info = [street.get_text() for street in streets]
 
-        flat = SS_Flat(url, district_name, raw_info, self.target_deal_type)
+        flat = SS_Flat(url, district_name, raw_info,
+                       self.target_deal_type, self.city_name)
 
         try:
             flat.create(self.flat_series)
