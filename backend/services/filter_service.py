@@ -9,6 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 def create_flats_filter(db: Session, filter: FilterCreate):
     try:
+        #  TODO: need to check if submitted district is valid
         flats_filter = Filter(
             name=filter.name,
             district=filter.district,
