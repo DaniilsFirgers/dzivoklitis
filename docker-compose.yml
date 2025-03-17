@@ -21,7 +21,7 @@ services:
 
     command: >
       sh -c "cd /app/scraper/database && 
-      alembic revision --autogenerate -m 'Generated migration' && alembic upgrade head; 
+      alembic stamp head && alembic revision --autogenerate -m 'Generated migration' && alembic upgrade head; 
       cd /app/scraper && python3.10 -u main.py"
 
     networks:
