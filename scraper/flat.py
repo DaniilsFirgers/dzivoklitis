@@ -27,6 +27,7 @@ class Flat():
     id: Optional[str] = None
     price: Optional[int] = None
     rooms: Optional[int] = None
+    city: Optional[str] = None
     street: Optional[str] = UNKNOWN
     area: Optional[float] = None
     floor: Optional[int] = None
@@ -117,6 +118,7 @@ class Flat():
             source=self.source.value,
             deal_type=self.deal_type,
             url=self.url,
+            city=self.city,
             district=self.district,
             street=self.street,
             rooms=self.rooms,
@@ -135,6 +137,7 @@ class Flat():
         return Flat(
             url=flat.url,
             district=flat.district,
+            city=flat.city,
             source=Source(flat.source),
             deal_type=flat.deal_type,
             id=flat.flat_id,
@@ -154,10 +157,11 @@ class Flat():
 
 
 class SS_Flat(Flat):
-    def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: DealType):
+    def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: DealType, city: str):
         super().__init__(url=url, district=district_name,
                          source=Source.SS, deal_type=deal_type)
         self.raw_info = raw_info
+        self.city = city
 
     def create(self, unified_flat_series: Dict[str, str]):
         if len(self.raw_info) != 7:
@@ -167,15 +171,24 @@ class SS_Flat(Flat):
         self.price_per_m2 = try_parse_int(
             re.sub(r"[^\d]", "", self.raw_info[5]))
         self.rooms = try_parse_int(self.raw_info[1])
-        cleaned_street = re.sub(r'\b[A-Za-z]{1,7}\.\s*', '', self.raw_info[0])
-        self.street = f"{cleaned_street} iela"
+        self.street = self.get_street()
         self.area = try_parse_float(self.raw_info[2])
-        self.floor, self.floors_total = self.parse_floors(self.raw_info[3])
+        self.floor, self.floors_total = self.get_floors(self.raw_info[3])
         self.series = unified_flat_series[self.raw_info[4]]
         self.id = self.create_id()
         self.created_at = datetime.now().astimezone(ZoneInfo("UTC"))
 
-    def parse_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
+    def get_street(self) -> str:
+        street = re.sub(r'\b[A-Za-z]{1,7}\.\s*|[^\w\s]$', '', self.raw_info[0])
+        street = street.strip()
+
+        words = street.split()
+        if len(words) > 1:
+            words.insert(1, "iela")
+
+        return " ".join(words)
+
+    def get_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
         try:
             actual_floor_str, last_floor_str = floors.split("/")
             actual_floor = int(actual_floor_str)
@@ -191,10 +204,11 @@ class SS_Flat(Flat):
 
 
 class City24_Flat(Flat):
-    def __init__(self, district_name: str,  deal_type: DealType, flat: City24Flat):
+    def __init__(self, district_name: str,  deal_type: DealType, flat: City24Flat, city: str):
         super().__init__(url="", district=district_name,
                          source=Source.CITY_24, deal_type=deal_type)
         self.flat = flat
+        self.city = city
 
     def create(self, unified_flat_series: Dict[str, str]):
         self.url = self.format_url(self.flat["friendly_id"])
@@ -264,10 +278,11 @@ PP_FILTER_MAP: Dict[str, FilterValue] = {
 
 
 class PP_Flat(Flat):
-    def __init__(self, district_name: str,  deal_type: DealType, flat: PpFlat):
+    def __init__(self, district_name: str,  deal_type: DealType, flat: PpFlat, city: str):
         super().__init__(url="", district=district_name,
                          source=Source.PP, deal_type=deal_type)
         self.flat = flat
+        self.city = city
         self.price_types = self.get_price_types()
 
     def create(self, unified_flat_series: Dict[str, str]):

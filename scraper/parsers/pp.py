@@ -21,7 +21,8 @@ class PardosanasPortalsParser(BaseParser):
                  preferred_districts: List[District], config: PpParserConfig
                  ):
         super().__init__(Source.PP, config.deal_type)
-        self.city_code = config.city_code
+        self.original_city_code = config.city_code
+        self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
         self.preferred_districts = preferred_districts
         self.user_agent = UserAgent()
@@ -52,7 +53,7 @@ class PardosanasPortalsParser(BaseParser):
 
             while True:
                 params = {
-                    "region": self.city_code,
+                    "region": self.original_city_code,
                     "action": self.get_action(),
                     "orderColumn": "orderDate",
                     "orderDirection": "DESC",
@@ -109,7 +110,8 @@ class PardosanasPortalsParser(BaseParser):
         """Process and validate each flat"""
 
         district_name = self.get_district_name(flat_data)
-        flat = PP_Flat(district_name, self.target_deal_type, flat_data)
+        flat = PP_Flat(district_name, self.target_deal_type,
+                       flat_data, self.city_name)
 
         try:
             flat.create(self.flat_series)

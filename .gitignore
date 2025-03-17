@@ -8,3 +8,6 @@ initdb/002_init.sql
 
 # ignore logs
 logs/
+
+# ignore migrations
+migrations/

@@ -1,20 +1,20 @@
 name = "Flats web scraper"
-version = "2.0.1"
+version = "2.0.2"
 
 [parsers]
 [parsers.ss]
-city_name = "Riga" 
+city_name = "riga" 
 deal_type = "Pārdod" # sell / hand_over (rent)
 name = "ss" 
 timeframe = "today-2" # today / today-2 / today-5
 
 [parsers.city24]
-city_code = 245396 
+city_code = "245396" 
 deal_type = "Pārdod" # sale / rent
 name = "city24" 
 
 [parsers.pp]
-city_code = 85 
+city_code = "85" 
 deal_type = "Pārdod" # 1 / 5
 name = "pp" 
 

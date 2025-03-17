@@ -19,7 +19,8 @@ class City24Parser(BaseParser):
                  preferred_districts: List[District], config: City24ParserConfig
                  ):
         super().__init__(Source.CITY_24, config.deal_type)
-        self.city_code = config.city_code
+        self.original_city_code = config.city_code
+        self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
         self.preferred_districts = preferred_districts
         self.user_agent = UserAgent()
@@ -43,7 +44,7 @@ class City24Parser(BaseParser):
 
             while True:
                 params = {
-                    "address[city]": self.city_code,
+                    "address[city]": self.original_city_code,
                     "tsType": platform_deal_type,
                     "unitType": "Apartment",
                     "itemsPerPage": self.items_per_page,
@@ -79,7 +80,7 @@ class City24Parser(BaseParser):
 
                 except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                     logger.error(
-                        f"Error fetching data for {self.city_code} on page {page}: {e}")
+                        f"Error fetching data for {self.original_city_code} on page {page}: {e}")
                     break
 
                 page += 1
@@ -87,7 +88,8 @@ class City24Parser(BaseParser):
     async def process_flat(self, flat_data: Flat, session: aiohttp.ClientSession):
         """Process and validate each flat"""
         district_name = self.get_district_name(flat_data)
-        flat = City24_Flat(district_name, self.target_deal_type, flat_data)
+        flat = City24_Flat(district_name, self.target_deal_type,
+                           flat_data, self.city_name)
 
         try:
             flat.create(self.flat_series)

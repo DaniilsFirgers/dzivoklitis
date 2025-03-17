@@ -12,26 +12,25 @@ class BaseParser:
     def __init__(self, source: Source, target_deal_type: str):
         self.source = source
         self.target_deal_type = target_deal_type
-        self.districts = {}
-        self.deal_types = {}
-        self.flat_series = {}
+        self.cities, self.districts, self.deal_types, self.flat_series = self.get_settings()
         self.semaphore = asyncio.Semaphore(15)
 
     async def run(self):
-        self.districts, self.deal_types, self.flat_series = self.get_settings()
         asyncio.create_task(self.scrape())
 
-    def get_settings(self) -> tuple[Dict[str, str], Dict[str, str]]:
+    def get_settings(self) -> tuple[Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str]]:
         """Get the settings from the settings.json file.
         \n Returns:
-            tuple[Dict[str, str], Dict[str, str]]: A tuple of districts and deal types.
+            tuple[Dict[str, str], Dict[str, str]]: A tuple of districts, deal types, flat series and cities.
         """
         with open("/app/settings.json", "r", encoding="utf-8") as file:
             data = json.load(file)
 
-        settings = Settings(districts=PlatformMapping(**data["districts"]),
-                            deal_types=PlatformMapping(**data["deal_types"]),
-                            flat_series=PlatformMapping(**data["flat_series"]))
+        settings = Settings(
+            cities=PlatformMapping(**data["cities"]),
+            districts=PlatformMapping(**data["districts"]),
+            deal_types=PlatformMapping(**data["deal_types"]),
+            flat_series=PlatformMapping(**data["flat_series"]))
 
         districts = self._get_dict(
             self.source, settings.districts, "districts")
@@ -39,8 +38,10 @@ class BaseParser:
             self.source, settings.deal_types, "deal_types")
         flat_series = self._get_dict(
             self.source, settings.flat_series, "flat_series")
+        cities = self._get_dict(
+            self.source, settings.cities, "cities")
 
-        return (districts, deal_types, flat_series)
+        return (cities, districts, deal_types, flat_series)
 
     def _get_dict(self, source: Source, platform_mapping: PlatformMapping, dict_name: str) -> Dict[str, str]:
         external_map: Dict[str, str] = getattr(platform_mapping, source.value)

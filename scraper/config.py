@@ -23,14 +23,14 @@ class SsParserConfig:
 @dataclass(frozen=True)
 class City24ParserConfig:
     name: str
-    city_code: int  # Riga = 245396
+    city_code: str  # Riga = 245396
     deal_type: Literal["sale", "rent"]
 
 
 @dataclass(frozen=True)
 class PpParserConfig:
     name: str
-    city_code: int
+    city_code: str
     deal_type: Literal["1", "5"]
 
 
@@ -78,6 +78,7 @@ class PlatformMapping:
 
 @dataclass()
 class Settings:
+    cities: PlatformMapping
     districts: PlatformMapping
     deal_types: PlatformMapping
     flat_series: PlatformMapping
