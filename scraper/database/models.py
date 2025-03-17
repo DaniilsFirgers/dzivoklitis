@@ -47,10 +47,10 @@ class Flat(postgres_instance.Base):
 
     __table_args__ = (
         Index("idx_flat_location", location, postgresql_using="GIST"),
-        CheckConstraint("floor <= floors_total", name="floor_check"),
+        CheckConstraint("floor <= floors_total",
+                        name="floor_vs_total_floor_check"),
         CheckConstraint("rooms > 0", name="rooms_check"),
         CheckConstraint("area > 0", name="area_check"),
-        CheckConstraint("price > 0", name="price_check"),
         CheckConstraint("floors_total > 0", name="floors_total_check"),
         CheckConstraint("floor > 0", name="floor_check"),
     )
@@ -71,6 +71,8 @@ class Price(postgres_instance.Base):
 
     __table_args__ = (
         Index("idx_price_flat_id", flat_id),
+        Index("idx_price_flat_id_price", flat_id, price),
+        CheckConstraint("price > 0", name="price_check"),
     )
 
 
