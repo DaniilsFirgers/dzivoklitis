@@ -179,14 +179,16 @@ class SS_Flat(Flat):
         self.created_at = datetime.now().astimezone(ZoneInfo("UTC"))
 
     def get_street(self) -> str:
-        street = re.sub(r'\b[A-Za-z]{1,7}\.\s*|[^\w\s]$', '', self.raw_info[0])
-        street = street.strip()
+        street = re.sub(r'\b[A-Za-z]{1,7}\.\s*', '', self.raw_info[0])
+        return f"{street} iela" if street else UNKNOWN
+        # NOTE: Previous correct version
+        # street = re.sub(r'\b[A-Za-z]{1,7}\.\s*|[^\w\s]$', '', self.raw_info[0])
+        # street = street.strip()
+        # words = street.split()
+        # if len(words) > 1:
+        #     words.insert(1, "iela")
 
-        words = street.split()
-        if len(words) > 1:
-            words.insert(1, "iela")
-
-        return " ".join(words)
+        # return " ".join(words)
 
     def get_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
         try:
