@@ -61,7 +61,7 @@ class Price(postgres_instance.Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     flat_id = Column(String(255), ForeignKey(
-        "flats.flat_id", ondelete="CASCADE"), nullable=False)
+        "flats.flat_id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     price = Column(Integer, nullable=False)
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(
     ), nullable=False)
@@ -81,7 +81,7 @@ class Favourite(postgres_instance.Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     flat_id = Column(String(255), ForeignKey(
-        "flats.flat_id", ondelete="CASCADE"), nullable=False)
+        "flats.flat_id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
 
     tg_user_id = Column(BigInteger, ForeignKey(
         "users.tg_user_id", ondelete="CASCADE"),  nullable=False, )

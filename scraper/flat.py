@@ -109,8 +109,8 @@ class Flat():
         how the price changes for the same flat over time.
         For a more efficient storage, we hash the id with md5.
         """
-        return hashlib.md5(
-            f"{self.source.value}-{self.deal_type}-{self.district}-{self.street}-{self.series}-{self.rooms}-{self.area}-{self.floor}-{self.floors_total}".encode()).hexdigest()
+        id = f"{self.source.value}-{self.deal_type}-{self.district}-{self.street}-{self.series}-{self.rooms}-{self.area}-{self.floor}-{self.floors_total}"
+        return hashlib.md5(id.encode()).hexdigest()
 
     def to_orm(self) -> FlatORM:
         return FlatORM(
