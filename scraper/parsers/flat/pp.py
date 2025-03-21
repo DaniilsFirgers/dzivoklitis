@@ -1,7 +1,7 @@
 
 from typing import Dict
 
-from scraper.config import Source
+from scraper.utils.config import Source
 from scraper.parsers.base import UNKNOWN
 from scraper.schemas.pp import FilterValue, PriceType
 from scraper.schemas.shared import Coordinates, DealType

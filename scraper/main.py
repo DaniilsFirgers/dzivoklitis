@@ -12,7 +12,7 @@ import toml
 import asyncio
 import pytz
 from pathlib import Path
-from scraper.config import Config, District, ParserConfigs, PpParserConfig, SsParserConfig, City24ParserConfig, TelegramConfig, VariantiParserConfig
+from scraper.utils.config import Config, District, ParserConfigs, PpParserConfig, SsParserConfig, City24ParserConfig, TelegramConfig, VariantiParserConfig
 
 
 class FlatsParser(metaclass=SingletonMeta):

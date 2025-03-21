@@ -2,7 +2,7 @@ from typing import Dict
 from scraper.parsers.base import UNKNOWN
 from scraper.parsers.flat.base import Flat
 from scraper.schemas.city_24 import Flat as City24Flat
-from scraper.config import Source
+from scraper.utils.config import Source
 from scraper.schemas.shared import Coordinates, DealType
 from scraper.utils.meta import convert_dt_to_utc, try_parse_float, try_parse_int
 

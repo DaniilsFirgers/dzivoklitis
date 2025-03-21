@@ -5,7 +5,7 @@ from typing import Dict, List
 
 import aiohttp
 from fake_useragent import UserAgent
-from scraper.config import District, PpParserConfig, Source
+from scraper.utils.config import District, PpParserConfig, Source
 from scraper.database.crud import get_flat, get_users, upsert_flat, upsert_price
 from scraper.parsers.pp import PP_Flat
 from scraper.parsers.base import UNKNOWN, BaseParser

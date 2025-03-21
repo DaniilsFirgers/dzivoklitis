@@ -4,7 +4,7 @@ from typing import List
 import aiohttp
 from fake_useragent import UserAgent
 
-from scraper.config import City24ParserConfig, District, Source
+from scraper.utils.config import City24ParserConfig, District, Source
 from scraper.database.crud import get_flat, get_users, upsert_flat
 from scraper.parsers.city_24 import City24_Flat
 from scraper.parsers.base import UNKNOWN, BaseParser

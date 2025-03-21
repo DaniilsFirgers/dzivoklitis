@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 import pyvips
 import aiohttp
 
-from scraper.config import District, Source
+from scraper.utils.config import District, Source
 from dataclasses import dataclass
 from typing import Optional
 from scraper.parsers.base import UNKNOWN

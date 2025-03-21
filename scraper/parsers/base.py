@@ -2,7 +2,7 @@ import json
 from typing import Dict
 import asyncio
 
-from scraper.config import PlatformMapping, Settings, Source
+from scraper.utils.config import PlatformMapping, Settings, Source
 from scraper.utils.logger import logger
 
 UNKNOWN = "Nezināms"
