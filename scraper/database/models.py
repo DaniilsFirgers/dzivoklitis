@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List
-from sqlalchemy import VARCHAR, BigInteger, Column, String, Integer, SmallInteger, DECIMAL, ForeignKey, Text, TIMESTAMP,  func
+from sqlalchemy import BigInteger, Column, String, Integer, SmallInteger, DECIMAL, ForeignKey, Text, TIMESTAMP,  func
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import relationship, Mapped
 from geoalchemy2 import Geometry

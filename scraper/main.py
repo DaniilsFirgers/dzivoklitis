@@ -1,18 +1,18 @@
+from scraper.database.postgres import postgres_instance
+from scraper.utils.limiter import RateLimiterQueue
+from scraper.parsers.ss import SludinajumuServissParser
+from scraper.utils.meta import SingletonMeta
+from scraper.utils.logger import logger
+from scraper.parsers.city_24 import City24Parser
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from scraper.utils.telegram import TelegramBot
+from scraper.parsers.pp import PardosanasPortalsParser
 import os
 import toml
 import asyncio
 import pytz
 from pathlib import Path
-from scraper.config import Config, District, ParserConfigs, PpParserConfig, SsParserConfig, City24ParserConfig, TelegramConfig
-from scraper.parsers.pp import PardosanasPortalsParser
-from scraper.utils.telegram import TelegramBot
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from scraper.parsers.city_24 import City24Parser
-from scraper.utils.logger import logger
-from scraper.utils.meta import SingletonMeta
-from scraper.parsers.ss import SludinajumuServissParser
-from scraper.utils.limiter import RateLimiterQueue
-from scraper.database.postgres import postgres_instance
+from scraper.config import Config, District, ParserConfigs, PpParserConfig, SsParserConfig, City24ParserConfig, TelegramConfig, VariantiParserConfig
 
 
 class FlatsParser(metaclass=SingletonMeta):
@@ -33,7 +33,8 @@ class FlatsParser(metaclass=SingletonMeta):
         parsers = ParserConfigs(
             ss=SsParserConfig(**parsers_data["ss"]),
             city24=City24ParserConfig(**parsers_data["city24"]),
-            pp=PpParserConfig(**parsers_data["pp"])
+            pp=PpParserConfig(**parsers_data["pp"]),
+            varianti=VariantiParserConfig(**parsers_data["varianti"])
         )
 
         districts = [District(**district) for district in data["districts"]]

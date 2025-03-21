@@ -6,7 +6,7 @@ from fake_useragent import UserAgent
 from geopy.geocoders import Photon
 
 from scraper.database.models import Price
-from scraper.flat import Coordinates
+from scraper.schemas.shared import Coordinates
 from scraper.utils.logger import logger
 
 
