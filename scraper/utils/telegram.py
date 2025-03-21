@@ -10,7 +10,7 @@ from aiogram.filters import Command
 from aiogram.types import BotCommand
 from scraper.database.crud import add_favorite, remove_favorite, get_favourites
 from scraper.database.models import Price
-from scraper.flat import Flat
+from scraper.parsers.flat.base import Flat
 from scraper.utils.logger import logger
 from scraper.utils.limiter import RateLimiterQueue
 

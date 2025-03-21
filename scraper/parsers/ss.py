@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup, ResultSet, Tag
 from scraper.config import District, Source, SsParserConfig
 from scraper.database.crud import flat_exists, get_users, upsert_flat, get_flat
 from scraper.utils.telegram import MessageType, TelegramBot
-from scraper.flat import SS_Flat
+from scraper.parsers.ss import SS_Flat
 from scraper.parsers.base import BaseParser
 from scraper.utils.logger import logger
 from scraper.utils.meta import find_flat_price, get_coordinates

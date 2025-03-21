@@ -7,7 +7,7 @@ import aiohttp
 from fake_useragent import UserAgent
 from scraper.config import District, PpParserConfig, Source
 from scraper.database.crud import get_flat, get_users, upsert_flat, upsert_price
-from scraper.flat import PP_Flat
+from scraper.parsers.pp import PP_Flat
 from scraper.parsers.base import UNKNOWN, BaseParser
 from scraper.schemas.pp import City24ResFlatsDict,  Flat, PriceType
 from scraper.schemas.shared import DealType
