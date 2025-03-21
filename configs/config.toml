@@ -18,8 +18,13 @@ city_code = "85"
 deal_type = "Pārdod" # 1 / 5
 name = "pp" 
 
+[parsers.varianti]
+city_code = "50" 
+deal_type = "sell" # sell / rent
+name = "varianti" 
+
 [telegram]
-sleep_time = 0.5 # 1000ms
+sleep_time = 0.5 # 500ms
 
 [[districts]]
 max_price_per_m2 = 2500
