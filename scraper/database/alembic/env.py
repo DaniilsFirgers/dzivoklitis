@@ -8,7 +8,7 @@ from sqlalchemy import MetaData
 from alembic import context
 
 # Import your Base and models
-from scraper.database.models import postgres_instance
+from scraper.database.postgres import postgres_instance
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

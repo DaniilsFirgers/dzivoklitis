@@ -11,7 +11,8 @@ from scraper.parsers.base import UNKNOWN
 from scraper.schemas.shared import Coordinates
 from scraper.utils.logger import logger
 from fake_useragent import UserAgent
-from scraper.database.models import Flat as FlatORM, Price
+from scraper.database.models.flat import Flat as FlatORM
+from scraper.database.models.price import Price
 
 
 @dataclass
