@@ -11,17 +11,17 @@ from scraper.utils.meta import try_parse_float, try_parse_int
 class SS_Flat(Flat):
     def __init__(self, url: str, district_name: str, raw_info: list[str], deal_type: DealType, city: str):
         super().__init__(url=url, district=district_name,
-                         source=Source.SS, deal_type=deal_type)
+                         source=Source.SS, deal_type=deal_type.value)
         self.raw_info = raw_info
         self.city = city
 
     def create(self, unified_flat_series: Dict[str, str]):
         if len(self.raw_info) != 7:
             raise ValueError("Incorrect number of elements in raw_info")
-        self.price = try_parse_int(
-            re.sub(r"[^\d]", "", self.raw_info[6]))
-        self.price_per_m2 = try_parse_int(
-            re.sub(r"[^\d]", "", self.raw_info[5]))
+        self.price = try_parse_float(
+            re.sub(r"[^\d.]", "", self.raw_info[6]))
+        self.price_per_m2 = try_parse_float(
+            re.sub(r"[^\d.]", "", self.raw_info[5]))
         self.rooms = try_parse_int(self.raw_info[1])
         self.street = self.get_street()
         self.area = try_parse_float(self.raw_info[2])
