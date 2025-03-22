@@ -31,10 +31,10 @@ def try_parse_int(value: str) -> int:
         return 0
 
 
-def try_parse_float(value: str) -> float:
+def try_parse_float(value: str, ndigits: int = 1) -> float:
     """Try to parse a string to a float, return 0.0 if it fails."""
     try:
-        return float(value)
+        return round(float(value), ndigits)
     except ValueError as e:
         logger.error(f"Error parsing float: {e}")
         return 0.0
@@ -89,7 +89,7 @@ def valid_date_published(date_published_str: str) -> bool:
     """Check if date pubklished is after start of the day in EET"""
 
     now = datetime.now(ZoneInfo("Europe/Riga"))
-    start_of_day = datetime(now.year, now.month, now.day,
+    start_of_day = datetime(2024, 2, 1,
                             0, 0, 0, tzinfo=ZoneInfo("Europe/Riga"))
     date_published = datetime.fromisoformat(date_published_str)
 
