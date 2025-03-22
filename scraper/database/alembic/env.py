@@ -3,12 +3,16 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-from sqlalchemy import MetaData
 
 from alembic import context
 
 # Import your Base and models
 from scraper.database.postgres import postgres_instance
+from scraper.database.models.flat import Flat
+from scraper.database.models.price import Price
+from scraper.database.models.favorite import Favourite
+from scraper.database.models.user import User
+from scraper.database.models.filter import Filter
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
