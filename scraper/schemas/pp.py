@@ -83,5 +83,5 @@ class FilterValue(TypedDict):
 class PriceType(Enum):
     SELL_FULL = 1
     SELL_SQUARE = 15
-    RENT_FULL = 3
-    RENT_SQUARE = 5
+    RENT_MONTHLY = 5
+    RENT_DAILY = 3
