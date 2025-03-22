@@ -22,7 +22,7 @@ class Flat():
     source: Source
     deal_type: str
     id: Optional[str] = None
-    price: Optional[int] = None
+    price: Optional[float] = None
     rooms: Optional[int] = None
     city: Optional[str] = None
     street: Optional[str] = UNKNOWN
@@ -30,7 +30,7 @@ class Flat():
     floor: Optional[int] = None
     floors_total: Optional[int] = None
     series: Optional[str] = None
-    price_per_m2: Optional[int] = None
+    price_per_m2: Optional[float] = None
     latitude: Optional[float] = 0
     longitude: Optional[float] = 0
     image_data: Optional[bytes] = b""
@@ -56,6 +56,13 @@ class Flat():
             raise ValueError("Last floor is not allowed")
         if (self.floors_total < self.floor):
             raise ValueError("Last floor is lower than the floor")
+        # Check for both 0 and None
+        if (self.floors_total is None or self.floors_total == 0):
+            raise ValueError("Floors total is not set")
+        if (self.floor is None or self.floor == 0):
+            raise ValueError("Floor is not set")
+        if (self.rooms is None or self.rooms == 0):
+            raise ValueError("Rooms are not set")
 
     async def download_img(self, img_url: str, session: aiohttp.ClientSession) -> bytes:
         if img_url is None:
