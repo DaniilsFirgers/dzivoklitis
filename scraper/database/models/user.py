@@ -13,6 +13,8 @@ class User(postgres_instance.Base):
                         server_default=func.now(), nullable=False)
     updated_at = Column(TIMESTAMP(timezone=True),
                         server_default=func.now(), onupdate=func.now(), nullable=False)
+    filters = relationship("Filter", back_populates="user",
+                           cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("idx_user_tg_user_id", tg_user_id),
