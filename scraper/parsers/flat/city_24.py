@@ -10,7 +10,7 @@ from scraper.utils.meta import convert_dt_to_utc, try_parse_float, try_parse_int
 class City24_Flat(Flat):
     def __init__(self, district_name: str,  deal_type: DealType, flat: City24Flat, city: str):
         super().__init__(url="", district=district_name,
-                         source=Source.CITY_24, deal_type=deal_type)
+                         source=Source.CITY_24, deal_type=deal_type.value)
         self.flat = flat
         self.city = city
 
@@ -18,7 +18,7 @@ class City24_Flat(Flat):
         self.url = self.format_url(self.flat["friendly_id"])
         self.price_per_m2 = self.flat["price_per_unit"]
         self.area = try_parse_float(self.flat["property_size"])
-        self.price = try_parse_int((self.price_per_m2 * self.area))
+        self.price = try_parse_float((self.price_per_m2 * self.area))
         self.rooms = self.flat["room_count"]
         self.street = self.get_street_name()
         self.floor, self.floors_total = self.get_floors()
