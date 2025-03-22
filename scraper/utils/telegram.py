@@ -195,6 +195,7 @@ class TelegramBot:
         text = (
             f"<b>🔥 Cenu izmaiņa! 🔥</b>\n"
             f"<b>Avots</b>: {flat.source.value}\n"
+            f"<b>Darījums</b>: {flat.deal_type}\n"
             f"<b>Pilsēta</b>: {flat.city}\n"
             f"<b>Apkaime</b>: {flat.district}\n"
             f"<b>Iela</b>: {flat.street}\n"
@@ -212,6 +213,7 @@ class TelegramBot:
         """Generates the message text for a flat."""
         text = (
             f"<b>Avots</b>: {flat.source.value}\n"
+            f"<b>Darījums</b>: {flat.deal_type}\n"
             f"<b>Pilsēta</b>: {flat.city}\n"
             f"<b>Apkaime</b>: {flat.district}\n"
             f"<b>Iela</b>: {flat.street}\n"
