@@ -83,6 +83,7 @@ class PlatformMapping:
     ss: Dict[str, str]  # [platform_id, id]
     city24: Dict[str, str]  # [platform_id, id]
     pp: Dict[str, str]  # [platform_id, id]
+    varianti: Dict[str, str]
 
 
 @dataclass()
