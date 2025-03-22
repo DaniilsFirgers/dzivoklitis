@@ -4,6 +4,7 @@ from typing import List
 import aiohttp
 from fake_useragent import UserAgent
 
+from scraper.schemas.shared import DealType
 from scraper.utils.config import City24ParserConfig, District, Source
 from scraper.database.crud import get_flat, get_users, upsert_flat
 from scraper.parsers.flat.city_24 import City24_Flat
@@ -16,9 +17,9 @@ from scraper.utils.meta import find_flat_price, get_start_of_day
 
 class City24Parser(BaseParser):
     def __init__(self, telegram_bot: TelegramBot,
-                 preferred_districts: List[District], config: City24ParserConfig
+                 preferred_districts: List[District], config: City24ParserConfig, deal_type: DealType
                  ):
-        super().__init__(Source.CITY_24, config.deal_type)
+        super().__init__(Source.CITY_24, deal_type)
         self.original_city_code = config.city_code
         self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
@@ -37,15 +38,13 @@ class City24Parser(BaseParser):
     async def scrape_city(self, session: aiohttp.ClientSession):
         """Scrape the entire city asynchronously, handling pagination."""
         async with self.semaphore:
-            platform_deal_type = next(
-                (k for k, v in self.deal_types.items() if v == self.target_deal_type), None)
             url = "https://api.city24.lv/lv_LV/search/realties"
             page = 1
 
             while True:
                 params = {
                     "address[city]": self.original_city_code,
-                    "tsType": platform_deal_type,
+                    "tsType": self.platform_deal_type,
                     "unitType": "Apartment",
                     "itemsPerPage": self.items_per_page,
                     "page": page,
@@ -71,7 +70,6 @@ class City24Parser(BaseParser):
                         if not flats:
                             break
 
-                        #  TODO: move to a function
                         for flat in flats:
                             await self.process_flat(flat, session)
 
@@ -88,7 +86,7 @@ class City24Parser(BaseParser):
     async def process_flat(self, flat_data: Flat, session: aiohttp.ClientSession):
         """Process and validate each flat"""
         district_name = self.get_district_name(flat_data)
-        flat = City24_Flat(district_name, self.target_deal_type,
+        flat = City24_Flat(district_name, self.deal_type,
                            flat_data, self.city_name)
 
         try:
