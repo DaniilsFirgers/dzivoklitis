@@ -4,8 +4,11 @@ from scraper.database.models.flat import Flat
 from scraper.database.models.price import Price
 from scraper.database.models.favorite import Favourite
 from scraper.database.models.user import User
+from scraper.database.models.filter import Filter
 from scraper.database.postgres import postgres_instance
 from sqlalchemy.orm import joinedload
+
+from scraper.schemas.shared import DealType
 
 
 async def upsert_flat(flat: Flat, price: int) -> None:
@@ -113,5 +116,17 @@ async def get_users() -> list[User]:
     """Get all users."""
     async with postgres_instance.SessionLocal() as db:
         query = select(User)
+        result = await db.execute(query)
+        return result.scalars().all()
+
+
+async def get_filters(city: str, district: str, deal_type: DealType) -> list[Filter]:
+    """Get all filters for a district."""
+    async with postgres_instance.SessionLocal() as db:
+        query = select(Filter).where(
+            Filter.city == city,
+            Filter.district == district,
+            Filter.deal_type == deal_type
+        )
         result = await db.execute(query)
         return result.scalars().all()
