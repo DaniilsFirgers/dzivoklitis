@@ -20,7 +20,7 @@ name = "pp"
 
 [parsers.varianti]
 city_code = "50" 
-deal_type = "sell" # sell / rent
+deal_type = "Pārdod" # sell / rent
 name = "varianti" 
 
 [telegram]
