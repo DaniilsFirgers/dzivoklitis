@@ -1,4 +1,4 @@
-from sqlalchemy import TIMESTAMP, BigInteger, CheckConstraint, Column, ForeignKey, Index, Integer, String, func
+from sqlalchemy import TIMESTAMP, BigInteger, Boolean, CheckConstraint, Column, ForeignKey, Index, Integer, String, func
 from scraper.database.postgres import postgres_instance
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import NUMRANGE
@@ -15,10 +15,15 @@ class Filter(postgres_instance.Base):
     price_range = Column(NUMRANGE, nullable=False)
     area_range = Column(NUMRANGE, nullable=False)
     floor_range = Column(NUMRANGE, nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True),
-                        server_default=func.now(), nullable=False)
+    # tg_user_id = Column(BigInteger, nullable=False)
     tg_user_id = Column(BigInteger, ForeignKey(
         "users.tg_user_id", ondelete="CASCADE"), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True),
+                        server_default=func.now(), nullable=False)
+    updated_at = Column(TIMESTAMP(timezone=True),
+                        server_default=func.now(), onupdate=func.now(), nullable=False
+                        )
 
     user = relationship("User", back_populates="filters")
 
