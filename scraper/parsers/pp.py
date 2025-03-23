@@ -22,6 +22,7 @@ class PardosanasPortalsParser(BaseParser):
         self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
         self.preferred_districts = preferred_districts
+        self.preferred_deal_type = config.deal_type
         self.user_agent = UserAgent()
         # if there are less than 20, then no need to go to the next page
         self.items_per_page = 20
@@ -127,6 +128,9 @@ class PardosanasPortalsParser(BaseParser):
             await upsert_flat(flat_orm, flat.price)
         except Exception as e:
             logger.error(e)
+            return
+
+        if self.preferred_deal_type != flat.deal_type:
             return
 
         try:
