@@ -4,9 +4,10 @@ from typing import List
 import aiohttp
 from fake_useragent import UserAgent
 
-from scraper.config import City24ParserConfig, District, Source
+from scraper.schemas.shared import DealType
+from scraper.utils.config import City24ParserConfig, District, Source
 from scraper.database.crud import get_flat, get_users, upsert_flat
-from scraper.flat import City24_Flat
+from scraper.parsers.flat.city_24 import City24_Flat
 from scraper.parsers.base import UNKNOWN, BaseParser
 from scraper.utils.telegram import MessageType, TelegramBot
 from scraper.schemas.city_24 import Flat
@@ -16,13 +17,14 @@ from scraper.utils.meta import find_flat_price, get_start_of_day
 
 class City24Parser(BaseParser):
     def __init__(self, telegram_bot: TelegramBot,
-                 preferred_districts: List[District], config: City24ParserConfig
+                 preferred_districts: List[District], config: City24ParserConfig, deal_type: DealType
                  ):
-        super().__init__(Source.CITY_24, config.deal_type)
+        super().__init__(Source.CITY_24, deal_type)
         self.original_city_code = config.city_code
         self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
         self.preferred_districts = preferred_districts
+        self.preferred_deal_type = config.deal_type
         self.user_agent = UserAgent()
         # if there are less than 50, then there is no need to go to the next page
         self.items_per_page = 50
@@ -37,15 +39,13 @@ class City24Parser(BaseParser):
     async def scrape_city(self, session: aiohttp.ClientSession):
         """Scrape the entire city asynchronously, handling pagination."""
         async with self.semaphore:
-            platform_deal_type = next(
-                (k for k, v in self.deal_types.items() if v == self.target_deal_type), None)
             url = "https://api.city24.lv/lv_LV/search/realties"
             page = 1
 
             while True:
                 params = {
                     "address[city]": self.original_city_code,
-                    "tsType": platform_deal_type,
+                    "tsType": self.platform_deal_type,
                     "unitType": "Apartment",
                     "itemsPerPage": self.items_per_page,
                     "page": page,
@@ -71,9 +71,13 @@ class City24Parser(BaseParser):
                         if not flats:
                             break
 
-                        #  TODO: move to a function
                         for flat in flats:
-                            await self.process_flat(flat, session)
+                            try:
+                                await self.process_flat(flat, session)
+                            except Exception as e:
+                                logger.error(
+                                    f"Error processing flat: {e}")
+                                continue
 
                         if len(flats) < self.items_per_page:
                             break
@@ -88,32 +92,25 @@ class City24Parser(BaseParser):
     async def process_flat(self, flat_data: Flat, session: aiohttp.ClientSession):
         """Process and validate each flat"""
         district_name = self.get_district_name(flat_data)
-        flat = City24_Flat(district_name, self.target_deal_type,
+        flat = City24_Flat(district_name, self.deal_type,
                            flat_data, self.city_name)
 
-        try:
-            flat.create(self.flat_series)
-        except Exception as e:
-            logger.error(f"Error creating flat: {e}")
-            return
+        flat.create(self.flat_series)
+
         img_url = flat.format_img_url()
         flat.image_data = await flat.download_img(img_url, session)
 
-        try:
-            existing_flat = await get_flat(flat.id)
-        except Exception as e:
-            logger.error(e)
-            return
+        existing_flat = await get_flat(flat.id)
 
         if existing_flat:
             matched_price = find_flat_price(flat.price, existing_flat.prices)
             if matched_price:
                 return
-        try:
-            flat_orm = flat.to_orm()
-            await upsert_flat(flat_orm, flat.price)
-        except Exception as e:
-            logger.error(e)
+
+        flat_orm = flat.to_orm()
+        await upsert_flat(flat_orm, flat.price)
+
+        if self.preferred_deal_type != flat.deal_type:
             return
 
         try:
@@ -126,15 +123,12 @@ class City24Parser(BaseParser):
             return
 
         # NOTE: this is a temporary solution to send flats to users while we are testing the system
-        try:
-            users = await get_users()
-            for user in users:
-                if existing_flat is None:
-                    await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
-                elif existing_flat is not None and matched_price is None:
-                    await self.telegram_bot.send_flat_update_msg_with_limiter(flat, existing_flat.prices, tg_user_id=user.tg_user_id)
-        except Exception as e:
-            logger.error(e)
+        users = await get_users()
+        for user in users:
+            if existing_flat is None:
+                await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
+            elif existing_flat is not None and matched_price is None:
+                await self.telegram_bot.send_flat_update_msg_with_limiter(flat, existing_flat.prices, tg_user_id=user.tg_user_id)
 
     def get_district_name(self, flat: Flat) -> str:
         """Get district name from district id"""

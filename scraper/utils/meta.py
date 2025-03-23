@@ -5,8 +5,8 @@ from zoneinfo import ZoneInfo
 from fake_useragent import UserAgent
 from geopy.geocoders import Photon
 
-from scraper.database.models import Price
-from scraper.flat import Coordinates
+from scraper.database.models.price import Price
+from scraper.schemas.shared import Coordinates
 from scraper.utils.logger import logger
 
 
@@ -31,10 +31,10 @@ def try_parse_int(value: str) -> int:
         return 0
 
 
-def try_parse_float(value: str) -> float:
+def try_parse_float(value: str, ndigits: int = 1) -> float:
     """Try to parse a string to a float, return 0.0 if it fails."""
     try:
-        return float(value)
+        return round(float(value), ndigits)
     except ValueError as e:
         logger.error(f"Error parsing float: {e}")
         return 0.0
@@ -44,9 +44,9 @@ def get_start_of_day() -> int:
     """Get the start of the current day in Unix timestamp."""
     now = datetime.now(timezone.utc).replace(
         hour=0, minute=0, second=0, microsecond=0)
-
-    start_of_day = datetime(now.year, now.month, now.day)
-
+    # TODO: get back the start of the day in EET
+    # start_of_day = datetime(now.year, now.month, now.day)
+    start_of_day = datetime(2024, 6, 1)
     return int(start_of_day.timestamp())
 
 
@@ -86,7 +86,7 @@ def find_flat_price(curr_price: int, prev_prices: List[Price]) -> Optional[Price
 
 
 def valid_date_published(date_published_str: str) -> bool:
-    """Check if date pubklished is after start of the day in EET"""
+    """Check if date published is after start of the day in EET"""
 
     now = datetime.now(ZoneInfo("Europe/Riga"))
     start_of_day = datetime(now.year, now.month, now.day,

@@ -9,8 +9,8 @@ from aiogram.types import BufferedInputFile
 from aiogram.filters import Command
 from aiogram.types import BotCommand
 from scraper.database.crud import add_favorite, remove_favorite, get_favourites
-from scraper.database.models import Price
-from scraper.flat import Flat
+from scraper.database.models.price import Price
+from scraper.parsers.flat.base import Flat
 from scraper.utils.logger import logger
 from scraper.utils.limiter import RateLimiterQueue
 
@@ -195,6 +195,7 @@ class TelegramBot:
         text = (
             f"<b>🔥 Cenu izmaiņa! 🔥</b>\n"
             f"<b>Avots</b>: {flat.source.value}\n"
+            f"<b>Darījums</b>: {flat.deal_type}\n"
             f"<b>Pilsēta</b>: {flat.city}\n"
             f"<b>Apkaime</b>: {flat.district}\n"
             f"<b>Iela</b>: {flat.street}\n"
@@ -212,6 +213,7 @@ class TelegramBot:
         """Generates the message text for a flat."""
         text = (
             f"<b>Avots</b>: {flat.source.value}\n"
+            f"<b>Darījums</b>: {flat.deal_type}\n"
             f"<b>Pilsēta</b>: {flat.city}\n"
             f"<b>Apkaime</b>: {flat.district}\n"
             f"<b>Iela</b>: {flat.street}\n"

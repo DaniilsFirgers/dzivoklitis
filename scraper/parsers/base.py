@@ -2,26 +2,27 @@ import json
 from typing import Dict
 import asyncio
 
-from scraper.config import PlatformMapping, Settings, Source
+from scraper.schemas.shared import DealType
+from scraper.utils.config import PlatformMapping, Settings, Source
 from scraper.utils.logger import logger
 
 UNKNOWN = "Nezināms"
 
 
 class BaseParser:
-    def __init__(self, source: Source, target_deal_type: str):
+    def __init__(self, source: Source, deal_type: DealType):
         self.source = source
-        self.target_deal_type = target_deal_type
-        self.cities, self.districts, self.deal_types, self.flat_series = self.get_settings()
+        self.deal_type = deal_type
+        self.cities, self.districts, self.flat_series, self.platform_deal_type = self.get_settings()
         self.semaphore = asyncio.Semaphore(15)
 
     async def run(self):
         asyncio.create_task(self.scrape())
 
-    def get_settings(self) -> tuple[Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str]]:
+    def get_settings(self) -> tuple[Dict[str, str], Dict[str, str], Dict[str, str], str]:
         """Get the settings from the settings.json file.
         \n Returns:
-            tuple[Dict[str, str], Dict[str, str]]: A tuple of districts, deal types, flat series and cities.
+            tuple[Dict[str, str], Dict[str, str], Dict[str, str], str]: A tuple of cities,districts, flat series and platform deal type.
         """
         with open("/app/settings.json", "r", encoding="utf-8") as file:
             data = json.load(file)
@@ -34,14 +35,22 @@ class BaseParser:
 
         districts = self._get_dict(
             self.source, settings.districts, "districts")
+
         deal_types = self._get_dict(
             self.source, settings.deal_types, "deal_types")
+        # match paltform deal type with the one passed in the constructor (one we save to the db)
+        platform_deal_type = next(
+            (k for k, v in deal_types.items() if v == self.deal_type.value), None)
+        if platform_deal_type is None:
+            raise ValueError(
+                f"Deal type {self.deal_type.value} not found for platform {self.source.value}")
+
         flat_series = self._get_dict(
             self.source, settings.flat_series, "flat_series")
         cities = self._get_dict(
             self.source, settings.cities, "cities")
 
-        return (cities, districts, deal_types, flat_series)
+        return (cities, districts, flat_series, platform_deal_type)
 
     def _get_dict(self, source: Source, platform_mapping: PlatformMapping, dict_name: str) -> Dict[str, str]:
         external_map: Dict[str, str] = getattr(platform_mapping, source.value)

@@ -10,6 +10,7 @@ class Source(Enum):
     MM = "mm"
     CITY_24 = "city24"
     PP = "pp"
+    VARIANTI = "varianti"
 
 
 @dataclass(frozen=True)
@@ -34,11 +35,19 @@ class PpParserConfig:
     deal_type: Literal["1", "5"]
 
 
+@dataclass(frozen=True)
+class VariantiParserConfig:
+    name: str
+    city_code: str
+    deal_type: Literal["sell", "rent"]
+
+
 @dataclass
 class ParserConfigs:
     ss: SsParserConfig
     city24: City24ParserConfig
     pp: PpParserConfig
+    varianti: VariantiParserConfig
 
 
 @dataclass(frozen=True)
@@ -74,6 +83,7 @@ class PlatformMapping:
     ss: Dict[str, str]  # [platform_id, id]
     city24: Dict[str, str]  # [platform_id, id]
     pp: Dict[str, str]  # [platform_id, id]
+    varianti: Dict[str, str]
 
 
 @dataclass()

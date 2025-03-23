@@ -1,13 +1,11 @@
 
-
-from enum import Enum
-from typing import Dict, List
-
+from typing import List
 import aiohttp
 from fake_useragent import UserAgent
-from scraper.config import District, PpParserConfig, Source
-from scraper.database.crud import get_flat, get_users, upsert_flat, upsert_price
-from scraper.flat import PP_Flat
+
+from scraper.utils.config import District, PpParserConfig, Source
+from scraper.database.crud import get_flat, get_users, upsert_flat
+from scraper.parsers.flat.pp import PP_Flat
 from scraper.parsers.base import UNKNOWN, BaseParser
 from scraper.schemas.pp import City24ResFlatsDict,  Flat, PriceType
 from scraper.schemas.shared import DealType
@@ -18,20 +16,19 @@ from scraper.utils.telegram import MessageType, TelegramBot
 
 class PardosanasPortalsParser(BaseParser):
     def __init__(self, telegram_bot: TelegramBot,
-                 preferred_districts: List[District], config: PpParserConfig
-                 ):
-        super().__init__(Source.PP, config.deal_type)
+                 preferred_districts: List[District], config: PpParserConfig, deal_type: DealType):
+        super().__init__(Source.PP, deal_type)
         self.original_city_code = config.city_code
         self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
         self.preferred_districts = preferred_districts
+        self.preferred_deal_type = config.deal_type
         self.user_agent = UserAgent()
         # if there are less than 20, then no need to go to the next page
         self.items_per_page = 20
 
     async def scrape(self) -> None:
-        """Scrape flats from pp.lv asynchronously"""
-        logger.warning(f"Scraping {self.source} for {self.target_deal_type}")
+        """Scrape flats from pp.lv asynchronously."""
         connector = aiohttp.TCPConnector(
             limit_per_host=5, keepalive_timeout=10)
         async with aiohttp.ClientSession(connector=connector) as session:
@@ -40,13 +37,6 @@ class PardosanasPortalsParser(BaseParser):
     async def scrape_city(self, session: aiohttp.ClientSession):
         """Scrape the entire city asynchronously, handling pagination."""
         async with self.semaphore:
-            platform_deal_type = next(
-                (k for k, v in self.deal_types.items() if v == self.target_deal_type), None)
-            if platform_deal_type is None:
-                logger.error(
-                    f"Deal type {self.target_deal_type} not found in {self.source}")
-                return
-
             url = "https://apipub.pp.lv/lv/api_user/v1/categories/3811/lots"
             price_types = self.get_prices_types()
             page = 1
@@ -57,10 +47,12 @@ class PardosanasPortalsParser(BaseParser):
                     "action": self.get_action(),
                     "orderColumn": "orderDate",
                     "orderDirection": "DESC",
-                    "priceTypes[0]": price_types[0],
-                    "priceTypes[1]": price_types[1],
+                    "priceTypes[0]": price_types[0].value,
                     "currentPage": page,
                 }
+                #  include the second price type only if it exists - for selling flats
+                if len(price_types) == 2:
+                    params["priceTypes[1]"] = price_types[1].value
 
                 headers = {
                     "User-Agent": self.user_agent.random,
@@ -74,7 +66,6 @@ class PardosanasPortalsParser(BaseParser):
                                 f"Request failed with status code {response.status} - {response}")
                             page += 1
                             continue
-
                         data: City24ResFlatsDict = await response.json()
 
                         if not data or len(data["content"]["data"]) == 0:
@@ -85,7 +76,7 @@ class PardosanasPortalsParser(BaseParser):
 
                         if need_break:
                             logger.info(
-                                f"Stopping scraping {self.source} for {self.target_deal_type} on page {page} as the date is too old"
+                                f"Stopping scraping {self.source} for {self.deal_type} on page {page} as the date is too old"
                             )
                             break
 
@@ -107,16 +98,13 @@ class PardosanasPortalsParser(BaseParser):
         return False
 
     async def _process_flat(self, flat_data: Flat,  session: aiohttp.ClientSession):
-        """Process and validate each flat"""
-
+        """Process and validate each flat."""
         district_name = self.get_district_name(flat_data)
-        flat = PP_Flat(district_name, self.target_deal_type,
+        flat = PP_Flat(district_name, self.deal_type,
                        flat_data, self.city_name)
 
         try:
             flat.create(self.flat_series)
-            logger.info(
-                f"Processing flat {flat.id} - {flat.district} - {flat.series}")
         except Exception as e:
             logger.error(f"Error creating flat: {e}")
             return
@@ -142,6 +130,9 @@ class PardosanasPortalsParser(BaseParser):
             logger.error(e)
             return
 
+        if self.preferred_deal_type != flat.deal_type:
+            return
+
         try:
             district_info = next(
                 (district for district in self.preferred_districts if district.name == district_name), None)
@@ -163,7 +154,7 @@ class PardosanasPortalsParser(BaseParser):
             logger.error(e)
 
     def get_district_name(self, flat: Flat) -> str:
-        """Get district name from district id"""
+        """ Get district name from district id. """
         if flat["publicLocation"]["region"]["id"] is None:
             return UNKNOWN
         original_district_id = str(
@@ -175,12 +166,14 @@ class PardosanasPortalsParser(BaseParser):
             return UNKNOWN
         return district_name
 
-    def get_prices_types(self) -> List[int]:
-        if self.target_deal_type == DealType.RENT:
-            return [PriceType.RENT_FULL.value, PriceType.RENT_SQUARE.value]
-        return [PriceType.SELL_FULL.value, PriceType.SELL_SQUARE.value]
+    def get_prices_types(self) -> List[PriceType]:
+        """Get the price types for the request."""
+        #  We are not interested in daily rent prices
+        if self.deal_type == DealType.RENT:
+            return [PriceType.RENT_MONTHLY]
+        return [PriceType.SELL_FULL, PriceType.SELL_SQUARE]
 
     def get_action(self) -> int:
-        if self.target_deal_type == DealType.RENT:
+        if self.deal_type == DealType.RENT:
             return 5
         return 1
