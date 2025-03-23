@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS flats(
     deal_type VARCHAR(30) NOT NULL, -- sale or rent
     url TEXT NOT NULL, -- TEXT is a type for long strings
     district VARCHAR(100) NOT NULL, -- VARCHAR is a shorthand for VARCHAR(255), which is a string with a maximum length of 255 characters
-    city VARCHAR(100) NOT NULL,
+    city VARCHAR(50) NOT NULL,
     street VARCHAR(150) NOT NULL,
     rooms SMALLINT NOT NULL, -- SMALLINT is a type for small integers
     floors_total SMALLINT NOT NULL, -- how many floors are in the building
@@ -59,9 +59,11 @@ CREATE TABLE IF NOT EXISTS filters (
     area_range NUMRANGE NOT NULL,
     floor_range NUMRANGE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
     tg_user_id BIGINT NOT NULL,
-    FOREIGN KEY (tg_user_id) REFERENCES users(tg_user_id) ON DELETE CASCADE,   
-)
+    FOREIGN KEY (tg_user_id) REFERENCES users(tg_user_id) ON DELETE CASCADE
+);
 
 -- create indexes
 CREATE INDEX idx_price_flat_id ON prices(flat_id);
@@ -83,12 +85,12 @@ ALTER TABLE favourites ADD CONSTRAINT uq_fav_flat_id_tg_user_id UNIQUE (flat_id,
 ALTER TABLE users ADD CONSTRAINT uq_user_tg_user_id UNIQUE (tg_user_id);
 
 -- Add constraints for the `filters` table
-ALTER TABLE filters ADD CONSTRAINT room_range_not_null CHECK (room_range IS NOT NULL),
-ALTER TABLE filters ADD CONSTRAINT price_range_not_null CHECK (price_range IS NOT NULL),
-ALTER TABLE filters ADD CONSTRAINT area_range_not_null CHECK (area_range IS NOT NULL),
-ALTER TABLE filters ADD CONSTRAINT floor_range_not_null CHECK (floor_range IS NOT NULL),
-ALTER TABLE filters ADD CONSTRAINT check_room_range CHECK (lower(room_range) <= upper(room_range)),
-ALTER TABLE filters ADD CONSTRAINT check_price_range CHECK (lower(price_range) <= upper(price_range)),
-ALTER TABLE filters ADD CONSTRAINT check_area_range CHECK (lower(area_range) <= upper(area_range)),
-ALTER TABLE filters ADD CONSTRAINT check_floor_range CHECK (lower(floor_range) <= upper(floor_range)),
+ALTER TABLE filters ADD CONSTRAINT room_range_not_null CHECK (room_range IS NOT NULL);
+ALTER TABLE filters ADD CONSTRAINT price_range_not_null CHECK (price_range IS NOT NULL);
+ALTER TABLE filters ADD CONSTRAINT area_range_not_null CHECK (area_range IS NOT NULL);
+ALTER TABLE filters ADD CONSTRAINT floor_range_not_null CHECK (floor_range IS NOT NULL);
+ALTER TABLE filters ADD CONSTRAINT check_room_range CHECK (lower(room_range) <= upper(room_range));
+ALTER TABLE filters ADD CONSTRAINT check_price_range CHECK (lower(price_range) <= upper(price_range));
+ALTER TABLE filters ADD CONSTRAINT check_area_range CHECK (lower(area_range) <= upper(area_range));
+ALTER TABLE filters ADD CONSTRAINT check_floor_range CHECK (lower(floor_range) <= upper(floor_range));
 ALTER TABLE filters ADD CONSTRAINT uq_city_district UNIQUE (city, deal_type, district);
