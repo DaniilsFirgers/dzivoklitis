@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 class User(postgres_instance.Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True)
     tg_user_id = Column(BigInteger, unique=True, nullable=False)
     username = Column(String(30), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True),
