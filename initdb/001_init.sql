@@ -49,6 +49,20 @@ CREATE TABLE IF NOT EXISTS favourites(
     FOREIGN KEY(tg_user_id) REFERENCES users(tg_user_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS filters (
+    id SERIAL PRIMARY KEY,
+    deal_type VARCHAR(30) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    district VARCHAR(100) NOT NULL,
+    room_range NUMRANGE NOT NULL,
+    price_range NUMRANGE NOT NULL,
+    area_range NUMRANGE NOT NULL,
+    floor_range NUMRANGE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    tg_user_id BIGINT NOT NULL,
+    FOREIGN KEY (tg_user_id) REFERENCES users(tg_user_id) ON DELETE CASCADE,   
+)
+
 -- create indexes
 CREATE INDEX idx_price_flat_id ON prices(flat_id);
 CREATE INDEX idx_price_flat_id_price ON prices(flat_id, price);
@@ -56,6 +70,7 @@ CREATE INDEX idx_fav_flat_id ON favourites(flat_id);
 CREATE INDEX idx_fav_tg_user_id ON favourites(tg_user_id);
 CREATE INDEX idx_user_tg_user_id ON users(tg_user_id);
 create INDEX idx_flat_location ON flats USING GIST (location);
+CREATE INDEX idx_city_district ON filters (city, deal_type, district);
 
 -- create constraints
 ALTER TABLE prices ADD CONSTRAINT price_check CHECK (price > 0);
@@ -66,3 +81,14 @@ ALTER TABLE flats ADD CONSTRAINT floor_vs_total_floor_check CHECK (floor <= floo
 ALTER TABLE flats ADD CONSTRAINT floor_check CHECK (floor > 0);
 ALTER TABLE favourites ADD CONSTRAINT uq_fav_flat_id_tg_user_id UNIQUE (flat_id, tg_user_id);
 ALTER TABLE users ADD CONSTRAINT uq_user_tg_user_id UNIQUE (tg_user_id);
+
+-- Add constraints for the `filters` table
+ALTER TABLE filters ADD CONSTRAINT room_range_not_null CHECK (room_range IS NOT NULL),
+ALTER TABLE filters ADD CONSTRAINT price_range_not_null CHECK (price_range IS NOT NULL),
+ALTER TABLE filters ADD CONSTRAINT area_range_not_null CHECK (area_range IS NOT NULL),
+ALTER TABLE filters ADD CONSTRAINT floor_range_not_null CHECK (floor_range IS NOT NULL),
+ALTER TABLE filters ADD CONSTRAINT check_room_range CHECK (lower(room_range) <= upper(room_range)),
+ALTER TABLE filters ADD CONSTRAINT check_price_range CHECK (lower(price_range) <= upper(price_range)),
+ALTER TABLE filters ADD CONSTRAINT check_area_range CHECK (lower(area_range) <= upper(area_range)),
+ALTER TABLE filters ADD CONSTRAINT check_floor_range CHECK (lower(floor_range) <= upper(floor_range)),
+ALTER TABLE filters ADD CONSTRAINT uq_city_district UNIQUE (city, deal_type, district);
