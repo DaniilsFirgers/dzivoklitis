@@ -23,7 +23,7 @@ class SS_Flat(Flat):
             re.sub(r"[^\d.]", "", self.raw_info[6]))
         self.price_per_m2 = try_parse_float(
             re.sub(r"[^\d.]", "", self.raw_info[5]))
-        self.rooms = try_parse_int(self.raw_info[1])
+        self.rooms = self.get_rooms()
         self.street = self.get_street()
         self.area = try_parse_float(self.raw_info[2])
         self.floor, self.floors_total = self.get_floors(self.raw_info[3])
@@ -31,20 +31,21 @@ class SS_Flat(Flat):
         self.id = self.create_id()
         self.created_at = datetime.now().astimezone(ZoneInfo("UTC"))
 
+    def get_rooms(self) -> int:
+        rooms = try_parse_int(self.raw_info[1])
+        if rooms == 0 or rooms is None:
+            raise ValueError("Rooms is 0 or None")
+        return rooms
+
     def get_street(self) -> str:
         street = re.sub(r'\b[A-Za-z]{1,7}\.\s*', '', self.raw_info[0]).strip()
         return street
 
     def get_floors(self, floors: str) -> tuple[int, int] | tuple[None, None]:
-        try:
-            actual_floor_str, last_floor_str = floors.split("/")
-            actual_floor = int(actual_floor_str)
-            floors_total = int(last_floor_str)
-            # sometimes people write floors_total/actual_floor
-            if actual_floor > floors_total:
-                return floors_total, actual_floor
-            return actual_floor, floors_total
-        except ValueError:
-            return None, None
-        except Exception:
-            return None, None
+        actual_floor_str, last_floor_str = floors.split("/")
+        actual_floor = int(actual_floor_str)
+        floors_total = int(last_floor_str)
+        # sometimes people write floors_total/actual_floor
+        if actual_floor > floors_total:
+            return floors_total, actual_floor
+        return actual_floor, floors_total
