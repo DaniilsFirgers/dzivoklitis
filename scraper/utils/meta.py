@@ -86,10 +86,10 @@ def find_flat_price(curr_price: int, prev_prices: List[Price]) -> Optional[Price
 
 
 def valid_date_published(date_published_str: str) -> bool:
-    """Check if date pubklished is after start of the day in EET"""
+    """Check if date published is after start of the day in EET"""
 
     now = datetime.now(ZoneInfo("Europe/Riga"))
-    start_of_day = datetime(2024, 2, 1,
+    start_of_day = datetime(now.year, now.month, now.day,
                             0, 0, 0, tzinfo=ZoneInfo("Europe/Riga"))
     date_published = datetime.fromisoformat(date_published_str)
 
