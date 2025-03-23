@@ -1,16 +1,16 @@
-from datetime import datetime
 import hashlib
-from zoneinfo import ZoneInfo
 import pyvips
 import aiohttp
-
-from scraper.utils.config import District, Source
+from zoneinfo import ZoneInfo
+from datetime import datetime
 from dataclasses import dataclass
 from typing import Optional
+from scraper.utils.config import District, Source
+from fake_useragent import UserAgent
+
 from scraper.parsers.base import UNKNOWN
 from scraper.schemas.shared import Coordinates
 from scraper.utils.logger import logger
-from fake_useragent import UserAgent
 from scraper.database.models.flat import Flat as FlatORM
 from scraper.database.models.price import Price
 

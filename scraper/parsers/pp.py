@@ -1,8 +1,8 @@
 
 from typing import List
-
 import aiohttp
 from fake_useragent import UserAgent
+
 from scraper.utils.config import District, PpParserConfig, Source
 from scraper.database.crud import get_flat, get_users, upsert_flat
 from scraper.parsers.flat.pp import PP_Flat
@@ -132,14 +132,14 @@ class PardosanasPortalsParser(BaseParser):
             logger.error(e)
             return
 
-        # try:
-        #     district_info = next(
-        #         (district for district in self.preferred_districts if district.name == district_name), None)
-        #     if district_info is None:
-        #         return
-        #     flat.validate(district_info)
-        # except ValueError:
-        #     return
+        try:
+            district_info = next(
+                (district for district in self.preferred_districts if district.name == district_name), None)
+            if district_info is None:
+                return
+            flat.validate(district_info)
+        except ValueError:
+            return
 
         # NOTE: this is a temporary solution to send flats to users while we are testing the system
         try:

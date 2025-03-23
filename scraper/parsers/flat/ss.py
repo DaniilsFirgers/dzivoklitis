@@ -2,6 +2,7 @@ from datetime import datetime
 import re
 from typing import Dict
 from zoneinfo import ZoneInfo
+
 from scraper.utils.config import Source
 from scraper.parsers.flat.base import Flat
 from scraper.schemas.shared import DealType

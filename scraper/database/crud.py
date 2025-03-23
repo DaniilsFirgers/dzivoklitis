@@ -1,13 +1,13 @@
 from datetime import datetime
 from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
+
 from scraper.database.models.flat import Flat
 from scraper.database.models.price import Price
 from scraper.database.models.favorite import Favourite
 from scraper.database.models.user import User
 from scraper.database.models.filter import Filter
 from scraper.database.postgres import postgres_instance
-from sqlalchemy.orm import joinedload
-
 from scraper.schemas.shared import DealType
 
 
