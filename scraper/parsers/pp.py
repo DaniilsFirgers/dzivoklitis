@@ -107,8 +107,6 @@ class PardosanasPortalsParser(BaseParser):
 
         try:
             flat.create(self.flat_series)
-            logger.info(
-                f"Processing flat {flat.id} - {flat.district} - {flat.series} - {flat.price} - {flat.price_per_m2}")
         except Exception as e:
             logger.error(f"Error creating flat: {e}")
             return
@@ -134,14 +132,14 @@ class PardosanasPortalsParser(BaseParser):
             logger.error(e)
             return
 
-        try:
-            district_info = next(
-                (district for district in self.preferred_districts if district.name == district_name), None)
-            if district_info is None:
-                return
-            flat.validate(district_info)
-        except ValueError:
-            return
+        # try:
+        #     district_info = next(
+        #         (district for district in self.preferred_districts if district.name == district_name), None)
+        #     if district_info is None:
+        #         return
+        #     flat.validate(district_info)
+        # except ValueError:
+        #     return
 
         # NOTE: this is a temporary solution to send flats to users while we are testing the system
         try:
