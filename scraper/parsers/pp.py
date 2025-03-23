@@ -28,8 +28,6 @@ class PardosanasPortalsParser(BaseParser):
 
     async def scrape(self) -> None:
         """Scrape flats from pp.lv asynchronously."""
-        logger.warning(
-            f"Scraping {self.source.value} for type {self.deal_type.value}")
         connector = aiohttp.TCPConnector(
             limit_per_host=5, keepalive_timeout=10)
         async with aiohttp.ClientSession(connector=connector) as session:
@@ -67,7 +65,6 @@ class PardosanasPortalsParser(BaseParser):
                                 f"Request failed with status code {response.status} - {response}")
                             page += 1
                             continue
-                        print(response.url)
                         data: City24ResFlatsDict = await response.json()
 
                         if not data or len(data["content"]["data"]) == 0:
