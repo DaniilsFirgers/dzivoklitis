@@ -121,6 +121,7 @@ class Flat():
             flat_id=self.id,
             source=self.source.value,
             deal_type=self.deal_type,
+            created_at=self.created_at,
             url=self.url,
             city=self.city,
             district=self.district,
