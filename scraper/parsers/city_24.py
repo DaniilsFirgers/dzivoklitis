@@ -71,7 +71,12 @@ class City24Parser(BaseParser):
                             break
 
                         for flat in flats:
-                            await self.process_flat(flat, session)
+                            try:
+                                await self.process_flat(flat, session)
+                            except Exception as e:
+                                logger.error(
+                                    f"Error processing flat: {e}")
+                                continue
 
                         if len(flats) < self.items_per_page:
                             break
@@ -89,30 +94,20 @@ class City24Parser(BaseParser):
         flat = City24_Flat(district_name, self.deal_type,
                            flat_data, self.city_name)
 
-        try:
-            flat.create(self.flat_series)
-        except Exception as e:
-            logger.error(f"Error creating flat: {e}")
-            return
+        flat.create(self.flat_series)
+
         img_url = flat.format_img_url()
         flat.image_data = await flat.download_img(img_url, session)
 
-        try:
-            existing_flat = await get_flat(flat.id)
-        except Exception as e:
-            logger.error(e)
-            return
+        existing_flat = await get_flat(flat.id)
 
         if existing_flat:
             matched_price = find_flat_price(flat.price, existing_flat.prices)
             if matched_price:
                 return
-        try:
-            flat_orm = flat.to_orm()
-            await upsert_flat(flat_orm, flat.price)
-        except Exception as e:
-            logger.error(e)
-            return
+
+        flat_orm = flat.to_orm()
+        await upsert_flat(flat_orm, flat.price)
 
         try:
             district_info = next(
@@ -124,15 +119,12 @@ class City24Parser(BaseParser):
             return
 
         # NOTE: this is a temporary solution to send flats to users while we are testing the system
-        try:
-            users = await get_users()
-            for user in users:
-                if existing_flat is None:
-                    await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
-                elif existing_flat is not None and matched_price is None:
-                    await self.telegram_bot.send_flat_update_msg_with_limiter(flat, existing_flat.prices, tg_user_id=user.tg_user_id)
-        except Exception as e:
-            logger.error(e)
+        users = await get_users()
+        for user in users:
+            if existing_flat is None:
+                await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
+            elif existing_flat is not None and matched_price is None:
+                await self.telegram_bot.send_flat_update_msg_with_limiter(flat, existing_flat.prices, tg_user_id=user.tg_user_id)
 
     def get_district_name(self, flat: Flat) -> str:
         """Get district name from district id"""
