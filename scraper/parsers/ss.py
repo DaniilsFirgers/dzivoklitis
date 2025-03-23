@@ -22,7 +22,7 @@ class SludinajumuServissParser(BaseParser):
         self.preferred_districts = preferred_districts
         self.look_back_arg = config.timeframe
         self.telegram_bot = telegram_bot
-        self.semaphore = asyncio.Semaphore(10)
+        self.semaphore = asyncio.Semaphore(6)
 
     async def fetch_page(self, session: aiohttp.ClientSession, url: str, retries: int = 3, delay: int = 1) -> str:
         for attempt in range(retries):
@@ -39,7 +39,9 @@ class SludinajumuServissParser(BaseParser):
 
     async def scrape_district(self, session: aiohttp.ClientSession, platform_district_name: str, internal_district_name: str):
         """Scrape all pages of a given district asynchronously with request limits."""
-        base_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.look_back_arg}/{self.platform_deal_type}/"
+        # TODO: uncomment old url
+        # base_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.look_back_arg}/{self.platform_deal_type}/"
+        base_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.platform_deal_type}/"
 
         async with self.semaphore:
             first_page_html = await self.fetch_page(session, base_url)
@@ -58,7 +60,9 @@ class SludinajumuServissParser(BaseParser):
 
     async def scrape_page(self, session: aiohttp.ClientSession, platform_district_name: str, internal_district_name: str, page: int):
         """Scrape a single page and extract flat details asynchronously."""
-        page_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.look_back_arg}/{self.platform_deal_type}/page{page}.html"
+        # TODO: uncomment old url
+        # page_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.look_back_arg}/{self.platform_deal_type}/page{page}.html"
+        page_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.platform_deal_type}/page{page}.html"
 
         async with self.semaphore:
             page_html = await self.fetch_page(session, page_url)
@@ -139,7 +143,7 @@ class SludinajumuServissParser(BaseParser):
 
     async def scrape(self) -> None:
         connector = aiohttp.TCPConnector(
-            limit_per_host=4, keepalive_timeout=20)
+            limit_per_host=3, keepalive_timeout=20)
         async with aiohttp.ClientSession(connector=connector) as session:
             tasks = [asyncio.ensure_future(self.scrape_district(session, platform_district_name, internal_district_name))
                      for platform_district_name, internal_district_name in self.districts.items()]
