@@ -44,9 +44,7 @@ def get_start_of_day() -> int:
     """Get the start of the current day in Unix timestamp."""
     now = datetime.now(timezone.utc).replace(
         hour=0, minute=0, second=0, microsecond=0)
-    # TODO: get back the start of the day in EET
-    # start_of_day = datetime(now.year, now.month, now.day)
-    start_of_day = datetime(2024, 6, 1)
+    start_of_day = datetime(now.year, now.month, now.day)
     return int(start_of_day.timestamp())
 
 

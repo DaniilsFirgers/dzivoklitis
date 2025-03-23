@@ -40,9 +40,7 @@ class SludinajumuServissParser(BaseParser):
 
     async def scrape_district(self, session: aiohttp.ClientSession, platform_district_name: str, internal_district_name: str):
         """Scrape all pages of a given district asynchronously with request limits."""
-        # TODO: uncomment old url
-        # base_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.look_back_arg}/{self.platform_deal_type}/"
-        base_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.platform_deal_type}/"
+        base_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.look_back_arg}/{self.platform_deal_type}/"
 
         async with self.semaphore:
             first_page_html = await self.fetch_page(session, base_url)
@@ -61,9 +59,7 @@ class SludinajumuServissParser(BaseParser):
 
     async def scrape_page(self, session: aiohttp.ClientSession, platform_district_name: str, internal_district_name: str, page: int):
         """Scrape a single page and extract flat details asynchronously."""
-        # TODO: uncomment old url
-        # page_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.look_back_arg}/{self.platform_deal_type}/page{page}.html"
-        page_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.platform_deal_type}/page{page}.html"
+        page_url = f"https://www.ss.lv/real-estate/flats/{self.original_city_name}/{platform_district_name}/{self.look_back_arg}/{self.platform_deal_type}/page{page}.html"
 
         async with self.semaphore:
             page_html = await self.fetch_page(session, page_url)
