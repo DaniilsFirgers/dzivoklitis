@@ -1,4 +1,11 @@
+import os
+import toml
+import asyncio
+import pytz
+from pathlib import Path
+
 from scraper.database.postgres import postgres_instance
+from scraper.schemas.shared import DealType
 from scraper.utils.limiter import RateLimiterQueue
 from scraper.parsers.ss import SludinajumuServissParser
 from scraper.utils.meta import SingletonMeta
@@ -7,11 +14,6 @@ from scraper.parsers.city_24 import City24Parser
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from scraper.utils.telegram import TelegramBot
 from scraper.parsers.pp import PardosanasPortalsParser
-import os
-import toml
-import asyncio
-import pytz
-from pathlib import Path
 from scraper.utils.config import Config, District, ParserConfigs, PpParserConfig, SsParserConfig, City24ParserConfig, TelegramConfig, VariantiParserConfig
 
 
@@ -53,27 +55,46 @@ class FlatsParser(metaclass=SingletonMeta):
             await self.telegram_bot.send_text_msg_with_limiter(
                 f"Bot with version {self.config.version} started", admin_tg_id)
 
-        ss = SludinajumuServissParser(self.telegram_bot, self.config.districts,
-                                      self.config.parsers.ss)
+        ss_rent = SludinajumuServissParser(self.telegram_bot, self.config.districts,
+                                           self.config.parsers.ss, DealType.RENT)
 
-        city24 = City24Parser(
-            self.telegram_bot, self.config.districts, self.config.parsers.city24)
+        ss_sell = SludinajumuServissParser(self.telegram_bot, self.config.districts,
+                                           self.config.parsers.ss, DealType.SELL)
 
-        pp = PardosanasPortalsParser(self.telegram_bot, self.config.districts,
-                                     self.config.parsers.pp)
+        city24_rent = City24Parser(self.telegram_bot, self.config.districts,
+                                   self.config.parsers.city24, DealType.RENT)
 
-        await asyncio.gather(ss.run(), city24.run(), pp.run())
+        city24_sell = City24Parser(self.telegram_bot, self.config.districts,
+                                   self.config.parsers.city24, DealType.SELL)
+
+        pp_rent = PardosanasPortalsParser(
+            self.telegram_bot, self.config.districts, self.config.parsers.pp, DealType.RENT)
+
+        pp_sell = PardosanasPortalsParser(
+            self.telegram_bot, self.config.districts, self.config.parsers.pp, DealType.SELL)
+
+        # NOTE: currently no need tp run all parsers at once
+        # await asyncio.gather(city24_sell.run())
 
         loop = asyncio.get_running_loop()
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            ss.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="SS")
+            ss_sell.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="SS_Sell")
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            city24.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="City24")
+            ss_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=2, name="SS_Rent")
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            pp.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="PP")
+            city24_sell.run(), loop), "cron", hour="9,12,15,18,21", minute=4, name="City24_Sell")
+
+        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+            city24_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=6, name="City24_Rent")
+
+        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+            pp_sell.run(), loop), "cron", hour="9,12,15,18,21", minute=8, name="PP_Sell")
+
+        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+            pp_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=10, name="PP_Rent")
 
         self.scheduler.start()
 
