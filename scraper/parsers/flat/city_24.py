@@ -25,8 +25,7 @@ class City24_Flat(Flat):
         self.floor, self.floors_total = self.get_floors()
         self.series = self.get_series_type(unified_flat_series)
         self.id = self.create_id()
-        self.add_coordinates(Coordinates(
-            latitude=self.flat["latitude"], longitude=self.flat["longitude"]))
+        self.add_coordinates(self.get_coordinates())
         self.created_at = convert_dt_to_utc(self.flat["date_published"])
 
     def get_floors(self) -> tuple[int, int]:
@@ -34,14 +33,12 @@ class City24_Flat(Flat):
         floors_total = self.flat["attributes"]["TOTAL_FLOORS"]
 
         # handle different cases :)
-        if floor is None and floors_total is None:
-            return None, None
-
-        if floor is None:
-            return floors_total, floors_total
-
-        if floors_total is None:
-            return floor, floor
+        if floor is None or floors_total is None:
+            raise ValueError(
+                f"Either floor and floors_total is missing for flat in {self.source.value} scraper")
+        if floor == 0 or floors_total == 0:
+            raise ValueError(
+                f"Either floor or floors_total is 0 for flat in {self.source.value} scraper")
 
         if floor > floors_total:
             return floors_total, floor
@@ -62,7 +59,18 @@ class City24_Flat(Flat):
 
         return UNKNOWN
 
+    def get_coordinates(self) -> Coordinates:
+        latitude = self.flat["latitude"] or 0
+        longitude = self.flat["longitude"] or 0
+        return Coordinates(latitude, longitude)
+
     def format_img_url(self) -> str:
+        if self.flat["main_image"] is None:
+            raise ValueError(
+                f"Main image is missing for flat {self.id} in {self.source.value} scraper")
+        if self.flat["main_image"]["url"] is None:
+            raise ValueError(
+                f"Main image url is missing for flat {self.id} in {self.source.value} scraper")
         url = self.flat["main_image"]["url"]
         return url.replace("{fmt:em}", "14")
 
