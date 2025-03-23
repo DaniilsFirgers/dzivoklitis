@@ -39,7 +39,6 @@ class BaseParser:
         deal_types = self._get_dict(
             self.source, settings.deal_types, "deal_types")
         # match paltform deal type with the one passed in the constructor (one we save to the db)
-        logger.info(f"self.deal_type {self.deal_type.value}")
         platform_deal_type = next(
             (k for k, v in deal_types.items() if v == self.deal_type.value), None)
         if platform_deal_type is None:
