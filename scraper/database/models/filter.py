@@ -15,7 +15,6 @@ class Filter(postgres_instance.Base):
     price_range = Column(NUMRANGE, nullable=False)
     area_range = Column(NUMRANGE, nullable=False)
     floor_range = Column(NUMRANGE, nullable=False)
-    # tg_user_id = Column(BigInteger, nullable=False)
     tg_user_id = Column(BigInteger, ForeignKey(
         "users.tg_user_id", ondelete="CASCADE"), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
