@@ -1,11 +1,10 @@
 import asyncio
 import aiohttp
-from typing import List
 from bs4 import BeautifulSoup, ResultSet, Tag
 
 from scraper.schemas.shared import DealType
-from scraper.utils.config import District, Source, SsParserConfig
-from scraper.database.crud import get_users, upsert_flat, get_flat
+from scraper.utils.config import Source, SsParserConfig
+from scraper.database.crud import get_matching_filters_tg_user_ids, get_users, upsert_flat, get_flat
 from scraper.utils.telegram import MessageType, TelegramBot
 from scraper.parsers.flat.ss import SS_Flat
 from scraper.parsers.base import BaseParser
@@ -14,12 +13,11 @@ from scraper.utils.meta import find_flat_price, get_coordinates
 
 
 class SludinajumuServissParser(BaseParser):
-    def __init__(self, telegram_bot: TelegramBot, preferred_districts: List[District], config: SsParserConfig, deal_type: DealType):
+    def __init__(self, telegram_bot: TelegramBot,  config: SsParserConfig, deal_type: DealType):
 
         super().__init__(Source.SS, deal_type)
         self.original_city_name = config.city_name
         self.city_name = self.cities[self.original_city_name]
-        self.preferred_districts = preferred_districts
         self.preferred_deal_type = config.deal_type
         self.look_back_arg = config.timeframe
         self.telegram_bot = telegram_bot
@@ -72,10 +70,15 @@ class SludinajumuServissParser(BaseParser):
         tasks = []
         for index, (description, streets) in enumerate(zip(descriptions, zip(*[iter(streets)] * 7))):
             img_url = self.get_image_url(image_urls, index)
-            tasks.append(asyncio.create_task(
-                self.process_flat(description, streets,
-                                  img_url, internal_district_name, session)
-            ))
+            try:
+                tasks.append(asyncio.create_task(
+                    self.process_flat(description, streets,
+                                      img_url, internal_district_name, session)
+                ))
+            except Exception as e:
+                logger.error(
+                    f"Error processing flat: {e}")
+                continue
 
         await asyncio.gather(*tasks)
 
@@ -88,20 +91,19 @@ class SludinajumuServissParser(BaseParser):
 
         try:
             flat.create(self.flat_series)
-        except Exception:
+        except Exception as e:
+            logger.error(e)
             return
 
         flat.image_data = await flat.download_img(img_url, session)
 
         # TODO: move this to a separate task that will limit the amount of requests
         # flat.add_coordinates(await get_coordinates(flat.street, self.city_name))
-
         try:
             existing_flat = await get_flat(flat.id)
         except Exception as e:
             logger.error(e)
             return
-
         # Two options here
         # 1. existing_price is none -> flat is new
         # 2. existing_price is not none -> flat is existing, but need to check if price has changed
@@ -111,39 +113,33 @@ class SludinajumuServissParser(BaseParser):
             if matched_price:
                 return
 
+        flat_orm = flat.to_orm()
         try:
-            flat_orm = flat.to_orm()
             await upsert_flat(flat_orm, flat.price)
         except Exception as e:
             logger.error(e)
             return
 
-        if self.preferred_deal_type != flat.deal_type:
-            return
-
         try:
-            district_info = next(
-                (district for district in self.preferred_districts if district.name == district_name), None)
-            if district_info is None:
-                return
-            flat.validate(district_info)
-        except ValueError:
-            return
-
-        # NOTE: this is a temporary solution to send flats to users while we are testing the system
-        try:
-            users = await get_users()
-            for user in users:
-                if existing_flat is None:
-                    await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
-                elif existing_flat is not None and matched_price is None:
-                    await self.telegram_bot.send_flat_update_msg_with_limiter(flat, existing_flat.prices, tg_user_id=user.tg_user_id)
+            subscribers = await get_matching_filters_tg_user_ids(
+                self.city_name, district_name, self.deal_type, rooms=flat.rooms, area=flat.area, price=flat.price, floor=flat.floor)
         except Exception as e:
             logger.error(e)
+            return
+
+        for subscriber in subscribers:
+            try:
+                if existing_flat is None:
+                    await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=subscriber)
+                elif existing_flat is not None and matched_price is None:
+                    await self.telegram_bot.send_flat_update_msg_with_limiter(flat, existing_flat.prices, tg_user_id=subscriber)
+            except Exception as e:
+                logger.error(e)
+                continue
 
     async def scrape(self) -> None:
         connector = aiohttp.TCPConnector(
-            limit_per_host=3, keepalive_timeout=20)
+            limit_per_host=3, keepalive_timeout=40)
         async with aiohttp.ClientSession(connector=connector) as session:
             tasks = [asyncio.ensure_future(self.scrape_district(session, platform_district_name, internal_district_name))
                      for platform_district_name, internal_district_name in self.districts.items()]
