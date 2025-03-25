@@ -19,13 +19,13 @@ class SS_Flat(Flat):
     def create(self, unified_flat_series: Dict[str, str]):
         if len(self.raw_info) != 7:
             raise ValueError("Incorrect number of elements in raw_info")
-        self.price = try_parse_float(
+        self.price = try_parse_int(
             re.sub(r"[^\d.]", "", self.raw_info[6]))
         self.price_per_m2 = try_parse_float(
             re.sub(r"[^\d.]", "", self.raw_info[5]))
         self.rooms = self.get_rooms()
         self.street = self.get_street()
-        self.area = try_parse_float(self.raw_info[2])
+        self.area = try_parse_int(self.raw_info[2])
         self.floor, self.floors_total = self.get_floors(self.raw_info[3])
         self.series = unified_flat_series[self.raw_info[4]]
         self.id = self.create_id()
