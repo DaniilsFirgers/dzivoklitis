@@ -5,7 +5,7 @@ from scraper.parsers.flat.base import Flat
 from scraper.schemas.city_24 import Flat as City24Flat
 from scraper.utils.config import Source
 from scraper.schemas.shared import Coordinates, DealType
-from scraper.utils.meta import convert_dt_to_utc, try_parse_float
+from scraper.utils.meta import convert_dt_to_utc, try_parse_int
 
 
 class City24_Flat(Flat):
@@ -18,8 +18,8 @@ class City24_Flat(Flat):
     def create(self, unified_flat_series: Dict[str, str]):
         self.url = self.format_url(self.flat["friendly_id"])
         self.price_per_m2 = self.flat["price_per_unit"]
-        self.area = try_parse_float(self.flat["property_size"])
-        self.price = try_parse_float((self.price_per_m2 * self.area))
+        self.area = try_parse_int(self.flat["property_size"])
+        self.price = try_parse_int((self.price_per_m2 * self.area))
         self.rooms = self.flat["room_count"]
         self.street = self.get_street_name()
         self.floor, self.floors_total = self.get_floors()
