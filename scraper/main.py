@@ -14,7 +14,7 @@ from scraper.parsers.city_24 import City24Parser
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from scraper.utils.telegram import TelegramBot
 from scraper.parsers.pp import PardosanasPortalsParser
-from scraper.utils.config import Config, District, ParserConfigs, PpParserConfig, SsParserConfig, City24ParserConfig, TelegramConfig, VariantiParserConfig
+from scraper.utils.config import Config, ParserConfigs, PpParserConfig, SsParserConfig, City24ParserConfig, TelegramConfig, VariantiParserConfig
 
 
 class FlatsParser(metaclass=SingletonMeta):
@@ -39,9 +39,7 @@ class FlatsParser(metaclass=SingletonMeta):
             varianti=VariantiParserConfig(**parsers_data["varianti"])
         )
 
-        districts = [District(**district) for district in data["districts"]]
-
-        return Config(telegram=telegram, parsers=parsers, districts=districts, version=data["version"], name=data["name"])
+        return Config(telegram=telegram, parsers=parsers, version=data["version"], name=data["name"])
 
     async def run(self):
         self.tg_rate_limiter.start()
@@ -55,26 +53,26 @@ class FlatsParser(metaclass=SingletonMeta):
             await self.telegram_bot.send_text_msg_with_limiter(
                 f"Bot with version {self.config.version} started", admin_tg_id)
 
-        ss_rent = SludinajumuServissParser(self.telegram_bot, self.config.districts,
-                                           self.config.parsers.ss, DealType.RENT)
+        ss_rent = SludinajumuServissParser(
+            self.telegram_bot, self.config.parsers.ss, DealType.RENT)
 
-        ss_sell = SludinajumuServissParser(self.telegram_bot, self.config.districts,
+        ss_sell = SludinajumuServissParser(self.telegram_bot,
                                            self.config.parsers.ss, DealType.SELL)
 
-        city24_rent = City24Parser(self.telegram_bot, self.config.districts,
+        city24_rent = City24Parser(self.telegram_bot,
                                    self.config.parsers.city24, DealType.RENT)
 
-        city24_sell = City24Parser(self.telegram_bot, self.config.districts,
+        city24_sell = City24Parser(self.telegram_bot,
                                    self.config.parsers.city24, DealType.SELL)
 
         pp_rent = PardosanasPortalsParser(
-            self.telegram_bot, self.config.districts, self.config.parsers.pp, DealType.RENT)
+            self.telegram_bot, self.config.parsers.pp, DealType.RENT)
 
         pp_sell = PardosanasPortalsParser(
-            self.telegram_bot, self.config.districts, self.config.parsers.pp, DealType.SELL)
+            self.telegram_bot, self.config.parsers.pp, DealType.SELL)
 
-        # NOTE: currently no need tp run all parsers at once
-        # await asyncio.gather(ss_sell.run(), city24_sell.run(), pp_sell.run())
+        # NOTE: currently no need to run all parsers at once
+        # await asyncio.gather(pp_sell.run())
 
         loop = asyncio.get_running_loop()
 

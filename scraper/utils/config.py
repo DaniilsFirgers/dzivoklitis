@@ -56,23 +56,11 @@ class TelegramConfig:
 
 
 @dataclass(frozen=True)
-class District:
-    name: str
-    max_price_per_m2: int
-    min_price_per_m2: int
-    rooms: int
-    min_m2: int
-    min_floor: int
-    skip_last_floor: bool
-
-
-@dataclass(frozen=True)
 class Config:
     name: str
     version: str
     parsers: ParserConfigs
     telegram: TelegramConfig
-    districts: List[District]
 
 
 ################################ Platform Settings ################################

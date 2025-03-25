@@ -5,8 +5,8 @@ import aiohttp
 from fake_useragent import UserAgent
 
 from scraper.schemas.shared import DealType
-from scraper.utils.config import City24ParserConfig, District, Source
-from scraper.database.crud import get_flat, get_users, upsert_flat
+from scraper.utils.config import City24ParserConfig, Source
+from scraper.database.crud import get_flat, get_matching_filters_tg_user_ids, get_users, upsert_flat
 from scraper.parsers.flat.city_24 import City24_Flat
 from scraper.parsers.base import UNKNOWN, BaseParser
 from scraper.utils.telegram import MessageType, TelegramBot
@@ -16,18 +16,16 @@ from scraper.utils.meta import find_flat_price, get_start_of_day
 
 
 class City24Parser(BaseParser):
-    def __init__(self, telegram_bot: TelegramBot,
-                 preferred_districts: List[District], config: City24ParserConfig, deal_type: DealType
-                 ):
+    def __init__(self, telegram_bot: TelegramBot, config: City24ParserConfig, deal_type: DealType):
         super().__init__(Source.CITY_24, deal_type)
         self.original_city_code = config.city_code
         self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
-        self.preferred_districts = preferred_districts
         self.preferred_deal_type = config.deal_type
         self.user_agent = UserAgent()
         # if there are less than 50, then there is no need to go to the next page
         self.items_per_page = 50
+        self.semaphore = asyncio.Semaphore(8)
 
     async def scrape(self) -> None:
         """Scrape flats from City24.lv asynchronously"""
@@ -94,13 +92,20 @@ class City24Parser(BaseParser):
         district_name = self.get_district_name(flat_data)
         flat = City24_Flat(district_name, self.deal_type,
                            flat_data, self.city_name)
-
-        flat.create(self.flat_series)
+        try:
+            flat.create(self.flat_series)
+        except Exception as e:
+            logger.error(f"Error creating flat: {e}")
+            return
 
         img_url = flat.format_img_url()
         flat.image_data = await flat.download_img(img_url, session)
 
-        existing_flat = await get_flat(flat.id)
+        try:
+            existing_flat = await get_flat(flat.id)
+        except Exception as e:
+            logger.error(e)
+            return
 
         if existing_flat:
             matched_price = find_flat_price(flat.price, existing_flat.prices)
@@ -108,27 +113,29 @@ class City24Parser(BaseParser):
                 return
 
         flat_orm = flat.to_orm()
-        await upsert_flat(flat_orm, flat.price)
 
-        if self.preferred_deal_type != flat.deal_type:
+        try:
+            await upsert_flat(flat_orm, flat.price)
+        except Exception as e:
+            logger.error(e)
             return
 
         try:
-            district_info = next(
-                (district for district in self.preferred_districts if district.name == district_name), None)
-            if district_info is None:
-                return
-            flat.validate(district_info)
-        except ValueError:
+            subscribers = await get_matching_filters_tg_user_ids(
+                self.city_name, district_name, self.deal_type, rooms=flat.rooms, area=flat.area, price=flat.price, floor=flat.floor)
+        except Exception as e:
+            logger.error(e)
             return
-
-        # NOTE: this is a temporary solution to send flats to users while we are testing the system
-        users = await get_users()
-        for user in users:
-            if existing_flat is None:
-                await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=user.tg_user_id)
-            elif existing_flat is not None and matched_price is None:
-                await self.telegram_bot.send_flat_update_msg_with_limiter(flat, existing_flat.prices, tg_user_id=user.tg_user_id)
+        print("Subscribers: ", subscribers)
+        for subscriber in subscribers:
+            try:
+                if existing_flat is None:
+                    await self.telegram_bot.send_flat_msg_with_limiter(flat, MessageType.FLATS, tg_user_id=subscriber)
+                elif existing_flat is not None and matched_price is None:
+                    await self.telegram_bot.send_flat_update_msg_with_limiter(flat, existing_flat.prices, tg_user_id=subscriber)
+            except Exception as e:
+                logger.error(e)
+                continue
 
     def get_district_name(self, flat: Flat) -> str:
         """Get district name from district id"""

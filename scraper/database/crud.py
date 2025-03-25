@@ -1,6 +1,8 @@
 from datetime import datetime
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
+from sqlalchemy import cast
+from sqlalchemy.dialects.postgresql import NUMRANGE
 
 from scraper.database.models.flat import Flat
 from scraper.database.models.price import Price
@@ -120,13 +122,32 @@ async def get_users() -> list[User]:
         return result.scalars().all()
 
 
-async def get_filters(city: str, district: str, deal_type: DealType) -> list[Filter]:
-    """Get all filters for a district."""
-    async with postgres_instance.SessionLocal() as db:
-        query = select(Filter).where(
+async def get_matching_filters_tg_user_ids(
+    city: str,
+    district: str,
+    deal_type: DealType,
+    rooms: int,
+    price: int,
+    area: int,
+    floor: int
+) -> list[int]:
+    """Fetch telegram user ids for active filters that match the given city, district, deal type, and range conditions."""
+
+    async with postgres_instance.SessionLocal() as db:  # Open async session
+        query = select(Filter.tg_user_id).where(
             Filter.city == city,
             Filter.district == district,
-            Filter.deal_type == deal_type
+            Filter.is_active == True,
+            Filter.deal_type == deal_type.value,
+            # ✅ Check if `rooms` is inside `room_range`
+            Filter.room_range.op("@>")(cast((rooms, rooms), NUMRANGE)),
+            # ✅ Check if `price` is inside `price_range`
+            Filter.price_range.op("@>")(cast((price, price), NUMRANGE)),
+            # ✅ Check if `area` is inside `area_range`
+            Filter.area_range.op("@>")(cast((area, area), NUMRANGE)),
+            # ✅ Check if `floor` is inside `floor_range`
+            Filter.floor_range.op("@>")(cast((floor, floor), NUMRANGE))
         )
+
         result = await db.execute(query)
         return result.scalars().all()

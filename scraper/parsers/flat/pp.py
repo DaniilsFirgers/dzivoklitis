@@ -42,7 +42,7 @@ class PP_Flat(Flat):
         self.add_coordinates(self._get_coordinates())
         self.created_at = convert_dt_to_utc(self.flat["publishDate"])
 
-    def _get_prices(self, full_price_type: PriceType) -> tuple[float, float]:
+    def _get_prices(self, full_price_type: PriceType) -> tuple[int, float]:
         """Get the both full and per square prices of the flat"""
         full_price = next(
             (price for price in self.flat["prices"] if price["priceType"]["id"] == full_price_type.value), None)
@@ -80,7 +80,7 @@ class PP_Flat(Flat):
             (price for price in self.flat["prices"] if price["priceType"]["id"] == self.full_price_type[0].value), None)
         if targetPrice is None:
             return []
-        return [(convert_dt_to_utc(price["timestamp"]), try_parse_float(price["value"])) for price in targetPrice["priceHistory"]]
+        return [(convert_dt_to_utc(price["timestamp"]), try_parse_int(price["value"])) for price in targetPrice["priceHistory"]]
 
     def format_img_url(self) -> str:
         extension = self.flat["thumbnail"]["extension"]

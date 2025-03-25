@@ -27,8 +27,17 @@ class Filter(postgres_instance.Base):
     user = relationship("User", back_populates="filters")
 
     __table_args__ = (
-        # We will query by city, deal type and ditrict and load only the filters that are relevant
-        Index('idx_city_district', 'city', 'deal_type', 'district'),
+        # GiST index for range fields
+        Index(
+            "idx_filter_gist",
+            room_range,
+            price_range,
+            area_range,
+            floor_range,
+            postgresql_using="gist",
+        ),
+        # BTREE index for non-range fields like `is_active`, `city`, `district`, and `deal_type`
+        Index("idx_filter_btree", is_active, city, district, deal_type),
         CheckConstraint("room_range IS NOT NULL", name="room_range_not_null"),
         CheckConstraint("price_range IS NOT NULL",
                         name="price_range_not_null"),

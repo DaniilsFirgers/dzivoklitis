@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from datetime import datetime
 from dataclasses import dataclass
 from typing import Optional
-from scraper.utils.config import District, Source
+from scraper.utils.config import Source
 from fake_useragent import UserAgent
 
 from scraper.parsers.base import UNKNOWN
@@ -22,7 +22,7 @@ class Flat():
     source: Source
     deal_type: str
     id: Optional[str] = None
-    price: Optional[float] = None
+    price: Optional[int] = None
     rooms: Optional[int] = None
     city: Optional[str] = None
     street: Optional[str] = UNKNOWN
@@ -38,31 +38,6 @@ class Flat():
 
     def create(self):
         pass
-
-    def validate(self, district_info: District):
-        if (self.price / self.area > district_info.max_price_per_m2):
-            raise ValueError("Price per m2 is higher than the limit")
-        if (self.price / self.area < district_info.min_price_per_m2):
-            raise ValueError("Price per m2 is lower than the limit")
-        if (self.rooms != district_info.rooms):
-            raise ValueError("Rooms do not match the settings")
-        if (self.area < district_info.min_m2):
-            raise ValueError("Area is less than the limit")
-        if (self.floor < district_info.min_floor):
-            raise ValueError("Floor is lower than the limit")
-        if (self.floors_total == None or self.floor == None):
-            raise ValueError("Could not parse floors")
-        if (self.floors_total == self.floor and district_info.skip_last_floor):
-            raise ValueError("Last floor is not allowed")
-        if (self.floors_total < self.floor):
-            raise ValueError("Last floor is lower than the floor")
-        # Check for both 0 and None
-        if (self.floors_total is None or self.floors_total == 0):
-            raise ValueError("Floors total is not set")
-        if (self.floor is None or self.floor == 0):
-            raise ValueError("Floor is not set")
-        if (self.rooms is None or self.rooms == 0):
-            raise ValueError("Rooms are not set")
 
     async def download_img(self, img_url: str, session: aiohttp.ClientSession) -> bytes:
         if img_url is None:
