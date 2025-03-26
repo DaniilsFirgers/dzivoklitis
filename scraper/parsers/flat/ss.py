@@ -25,7 +25,7 @@ class SS_Flat(Flat):
             re.sub(r"[^\d.]", "", self.raw_info[5]))
         self.rooms = self.get_rooms()
         self.street = self.get_street()
-        self.area = try_parse_int(self.raw_info[2])
+        self.area = try_parse_float(self.raw_info[2], 2)
         self.floor, self.floors_total = self.get_floors(self.raw_info[3])
         self.series = unified_flat_series[self.raw_info[4]]
         self.id = self.create_id()
