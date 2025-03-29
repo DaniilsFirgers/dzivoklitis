@@ -42,10 +42,9 @@ def try_parse_float(value: str, ndigits: int = 1) -> float:
 
 def get_start_of_day() -> int:
     """Get the start of the current day in Unix timestamp."""
-    # TODO: revert back later, remove -3
     now = datetime.now(timezone.utc).replace(
         hour=0, minute=0, second=0, microsecond=0)
-    start_of_day = datetime(now.year, now.month, now.day-3)
+    start_of_day = datetime(now.year, now.month, now.day)
     return int(start_of_day.timestamp())
 
 
