@@ -10,7 +10,7 @@ from scraper.utils.meta import convert_dt_to_utc, try_parse_int
 
 class City24_Flat(Flat):
     def __init__(self, district_name: str,  deal_type: DealType, flat: City24Flat, city: str):
-        super().__init__(url=self.format_url(flat["friendly_id"]), district=district_name,
+        super().__init__(url=self.format_url(flat["friendly_id"], deal_type), district=district_name,
                          source=Source.CITY_24, deal_type=deal_type.value)
         self.flat = flat
         self.city = city
@@ -73,8 +73,8 @@ class City24_Flat(Flat):
         url = self.flat["main_image"]["url"]
         return url.replace("{fmt:em}", "14")
 
-    def format_url(self, id: str) -> str:
-        if self.deal_type == DealType.RENT:
+    def format_url(self, id: str, deal_type: DealType) -> str:
+        if deal_type == DealType.RENT:
             return f"https://www.city24.lv/real-estate/apartments-for-rent/riga/{id}"
 
         return f"https://www.city24.lv/real-estate/apartments-for-sale/riga/{id}"
