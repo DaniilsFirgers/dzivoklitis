@@ -4,48 +4,58 @@ from typing import List
 import aiohttp
 from fake_useragent import UserAgent
 
+from scraper.parsers.flat.varianti import Varianti_Flat
 from scraper.schemas.shared import DealType
-from scraper.utils.config import City24ParserConfig, Source
-from scraper.database.crud import get_flat, get_matching_filters_tg_user_ids, get_users, upsert_flat
+from scraper.utils.config import VariantiParserConfig, Source
+from scraper.database.crud import get_flat, get_matching_filters_tg_user_ids, upsert_flat
 from scraper.parsers.flat.city_24 import City24_Flat
 from scraper.parsers.base import UNKNOWN, BaseParser
 from scraper.utils.telegram import MessageType, TelegramBot
-from scraper.schemas.city_24 import Flat
+from scraper.schemas.varianti import Flat, VariantiRes
 from scraper.utils.logger import logger
 from scraper.utils.meta import find_flat_price, get_start_of_day
 
 
-class City24Parser(BaseParser):
-    def __init__(self, telegram_bot: TelegramBot, config: City24ParserConfig, deal_type: DealType):
-        super().__init__(Source.CITY_24, deal_type)
+class VariantiParser(BaseParser):
+    def __init__(self, telegram_bot: TelegramBot, config: VariantiParserConfig, deal_type: DealType):
+        super().__init__(Source.VARIANTI, deal_type)
         self.original_city_code = config.city_code
         self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
         self.user_agent = UserAgent()
         self.items_per_page = 50
-        self.semaphore = asyncio.Semaphore(8)
+        self.semaphore = asyncio.Semaphore(10)
 
     async def scrape(self) -> None:
-        """Scrape flats from City24.lv asynchronously"""
+        """Scrape flats from varianti.lv asynchronously"""
         connector = aiohttp.TCPConnector(
-            limit_per_host=5, keepalive_timeout=30)
+            limit_per_host=8, keepalive_timeout=30)
         async with aiohttp.ClientSession(connector=connector) as session:
-            await self.scrape_city(session)
+            tasks = [asyncio.ensure_future(self.scrape_district(session, platform_district_name, internal_district_name))
+                     for platform_district_name, internal_district_name in self.districts.items()]
+            await asyncio.gather(*tasks)
 
-    async def scrape_city(self, session: aiohttp.ClientSession):
+    async def scrape_district(self, session: aiohttp.ClientSession, platform_district_name: str, internal_district_name: str):
         """Scrape the entire city asynchronously, handling pagination."""
         async with self.semaphore:
-            url = "https://api.city24.lv/lv_LV/search/realties"
-            page = 1
+            url = "https://api.varianti.lv/rest/list/ad"
+            page = 0
 
             while True:
                 params = {
-                    "address[city]": self.original_city_code,
-                    "tsType": self.platform_deal_type,
-                    "unitType": "Apartment",
-                    "itemsPerPage": self.items_per_page,
+                    "filters": {
+                        "address_country": 1,
+                        "deal_type": self.platform_deal_type,
+                        "address_district": int(platform_district_name),
+                        "is_promoted": False,
+                        "features": []
+                    },
                     "page": page,
-                    "datePublished[gte]": get_start_of_day(),
+                    "size": self.items_per_page,
+                    "order":    {
+                        "asc": "false",
+                        "field": "DATE"
+                    },
                 }
 
                 headers = {
@@ -55,27 +65,44 @@ class City24Parser(BaseParser):
                 }
 
                 try:
-                    async with session.get(url, params=params, headers=headers, timeout=10) as response:
+                    async with session.post(url, json=params, headers=headers, timeout=10) as response:
                         if response.status != 200:
                             logger.error(
-                                f"Request failed with status code {response.status}")
+                                f"Request failed with status code {response.status} and status text {response}")
                             page += 1
                             continue
 
-                        flats: List[Flat] = await response.json()
+                        varianti_res: VariantiRes = await response.json()
 
-                        if not flats:
+                        if not varianti_res:
+                            logger.error(
+                                f"No data found for {self.original_city_code} on page {page}")
                             break
 
-                        for flat in flats:
+                        if not varianti_res["result"]["list"]:
+                            logger.info(
+                                f"No flats found for {self.original_city_code} on page {page}")
+                            break
+
+                        if len(varianti_res["errorDescriptions"]):
+                            logger.error(
+                                f"Error fetching data for {self.original_city_code} on page {page}: {varianti_res['errorDescriptions']}")
+                            break
+
+                        logger.info(
+                            f"Found {len(varianti_res['result']['list'])} flats for {internal_district_name} on page {page}")
+
+                        for flat in varianti_res["result"]["list"]:
                             try:
-                                await self.process_flat(flat, session)
+                                await self.process_flat(flat, session, internal_district_name)
                             except Exception as e:
                                 logger.error(
                                     f"Error processing flat: {e}")
                                 continue
 
-                        if len(flats) < self.items_per_page:
+                        if len(varianti_res["result"]["list"]) < self.items_per_page:
+                            logger.info(
+                                f"No more flats found for {internal_district_name} on page {page}")
                             break
 
                 except (aiohttp.ClientError, asyncio.TimeoutError) as e:
@@ -85,11 +112,10 @@ class City24Parser(BaseParser):
 
                 page += 1
 
-    async def process_flat(self, flat_data: Flat, session: aiohttp.ClientSession):
+    async def process_flat(self, flat_data: Flat, session: aiohttp.ClientSession, district_name: str):
         """Process and validate each flat"""
-        district_name = self.get_district_name(flat_data)
-        flat = City24_Flat(district_name, self.deal_type,
-                           flat_data, self.city_name)
+        flat = Varianti_Flat(district_name, self.deal_type,
+                             flat_data, self.city_name)
         try:
             flat.create(self.flat_series)
             flat.validate()
@@ -97,7 +123,7 @@ class City24Parser(BaseParser):
             logger.error(f"Error creating flat: {e}")
             return
 
-        img_url = flat.format_img_url()
+        img_url = flat.get_img_url()
         flat.image_data = await flat.download_img(img_url, session)
 
         try:
@@ -135,15 +161,3 @@ class City24Parser(BaseParser):
             except Exception as e:
                 logger.error(e)
                 continue
-
-    def get_district_name(self, flat: Flat) -> str:
-        """Get district name from district id"""
-        if flat["address"]["district"] is None:
-            return UNKNOWN
-        original_district_id = str(flat["address"]["district"]["id"])
-        district_name = self.districts.get(original_district_id)
-        if district_name is None:
-            logger.warning(
-                f"Cannot map district with external id {original_district_id}")
-            return UNKNOWN
-        return district_name

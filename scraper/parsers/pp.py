@@ -20,7 +20,6 @@ class PardosanasPortalsParser(BaseParser):
         self.original_city_code = config.city_code
         self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
-        self.preferred_deal_type = config.deal_type
         self.user_agent = UserAgent()
         # if there are less than 20, then no need to go to the next page
         self.items_per_page = 20
@@ -103,6 +102,7 @@ class PardosanasPortalsParser(BaseParser):
 
         try:
             flat.create(self.flat_series)
+            flat.validate()
         except Exception as e:
             logger.error(f"Error creating flat: {e}")
             return

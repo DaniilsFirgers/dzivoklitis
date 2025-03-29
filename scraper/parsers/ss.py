@@ -14,11 +14,9 @@ from scraper.utils.meta import find_flat_price, get_coordinates
 
 class SludinajumuServissParser(BaseParser):
     def __init__(self, telegram_bot: TelegramBot,  config: SsParserConfig, deal_type: DealType):
-
         super().__init__(Source.SS, deal_type)
         self.original_city_name = config.city_name
         self.city_name = self.cities[self.original_city_name]
-        self.preferred_deal_type = config.deal_type
         self.look_back_arg = config.timeframe
         self.telegram_bot = telegram_bot
         self.semaphore = asyncio.Semaphore(6)
@@ -91,6 +89,7 @@ class SludinajumuServissParser(BaseParser):
 
         try:
             flat.create(self.flat_series)
+            flat.validate()
         except Exception as e:
             logger.error(e)
             return

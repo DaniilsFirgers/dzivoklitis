@@ -26,6 +26,7 @@ class Flat():
     rooms: Optional[int] = None
     city: Optional[str] = None
     street: Optional[str] = UNKNOWN
+    series: Optional[str] = UNKNOWN
     area: Optional[float] = None
     floor: Optional[int] = None
     floors_total: Optional[int] = None
@@ -38,6 +39,27 @@ class Flat():
 
     def create(self):
         pass
+
+    def validate(self):
+        if self.floor < 1:
+            raise ValueError(f"Floor {self.floor} less than 1")
+        if self.floors_total < 1:
+            raise ValueError(
+                f"Total floors {self.floors_total} cannot be less than 1")
+        if self.floor > self.floors_total:
+            raise ValueError(
+                f"Floor {self.floor} cannot be greater than floors_total {self.floors_total}")
+        if self.area <= 0:
+            raise ValueError(f"Area {self.area} cannot be zero or negative")
+        if self.rooms < 1:
+            raise ValueError(f"Rooms {self.rooms} less than 1")
+        if self.price_per_m2 <= 0:
+            raise ValueError(
+                f"Price per m2 {self.price_per_m2} less than or equal to 0")
+        if self.price <= 0:
+            raise ValueError(f"Price {self.price} less than or equal to 0")
+        if self.area >= 1000:
+            raise ValueError(f"Area {self.area} greater than 1000")
 
     async def download_img(self, img_url: str, session: aiohttp.ClientSession) -> bytes:
         if img_url is None:

@@ -42,9 +42,10 @@ def try_parse_float(value: str, ndigits: int = 1) -> float:
 
 def get_start_of_day() -> int:
     """Get the start of the current day in Unix timestamp."""
+    # TODO: revert back later, remove -3
     now = datetime.now(timezone.utc).replace(
         hour=0, minute=0, second=0, microsecond=0)
-    start_of_day = datetime(now.year, now.month, now.day)
+    start_of_day = datetime(now.year, now.month, now.day-3)
     return int(start_of_day.timestamp())
 
 
@@ -87,7 +88,8 @@ def valid_date_published(date_published_str: str) -> bool:
     """Check if date published is after start of the day in EET"""
 
     now = datetime.now(ZoneInfo("Europe/Riga"))
-    start_of_day = datetime(now.year, now.month, now.day,
+    #  TODO: revert bakc later, remoev -3
+    start_of_day = datetime(now.year, now.month, now.day-3,
                             0, 0, 0, tzinfo=ZoneInfo("Europe/Riga"))
     date_published = datetime.fromisoformat(date_published_str)
 
@@ -99,3 +101,11 @@ def convert_dt_to_utc(dt_str: str) -> datetime:
     dt = datetime.fromisoformat(dt_str)
     dt_utc = dt.astimezone(timezone.utc)
     return dt_utc
+
+
+def convert_timestamp_to_utc(timestamp: int) -> datetime:
+    """Convert timestamp to UTC"""
+
+    if timestamp > 10**10:  # If timestamp is in milliseconds
+        timestamp /= 1000
+    return datetime.fromtimestamp(timestamp, tz=timezone.utc)

@@ -28,7 +28,7 @@ class PP_Flat(Flat):
 
     def create(self, unified_flat_series: Dict[str, str]):
         self.area = try_parse_float(
-            self._get_text_attribute(PP_FILTER_MAP["area"], 2))
+            self._get_text_attribute(PP_FILTER_MAP["area"]), 2)
         self.rooms = try_parse_int(
             self._get_text_attribute(PP_FILTER_MAP["rooms"]))
         self.price, self.price_per_m2 = self._get_prices(self.full_price_type)
@@ -49,14 +49,14 @@ class PP_Flat(Flat):
         # Here we need to try to tackle cases when one price is missing, either full or per square
         if full_price is None:
             raise ValueError("Price is missing")
-        num_full_price = try_parse_int(full_price["value"])
+        num_full_price = try_parse_float(full_price["value"])
         if num_full_price == 0:
             raise ValueError("Price is 0")
         if self.area == 0 or self.area is None:
             raise ValueError(
                 "Cannot calculate square price as area is missing")
         square_price = try_parse_float(num_full_price / self.area)
-        return num_full_price, square_price
+        return int(num_full_price), square_price
 
     def _get_text_attribute(self, filter_value: FilterValue) -> str:
         """Get attributes from the flat filters"""
