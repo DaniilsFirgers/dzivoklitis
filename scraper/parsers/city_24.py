@@ -125,7 +125,7 @@ class City24Parser(BaseParser):
         except Exception as e:
             logger.error(e)
             return
-        print("Subscribers: ", subscribers)
+
         for subscriber in subscribers:
             try:
                 if existing_flat is None:
