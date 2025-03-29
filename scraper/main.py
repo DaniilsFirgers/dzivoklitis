@@ -79,7 +79,7 @@ class FlatsParser(metaclass=SingletonMeta):
             self.telegram_bot, self.config.parsers.varianti, DealType.RENT)
 
         # NOTE: currently no need to run all parsers at once
-        await asyncio.gather(pp_rent.run(), pp_sell.run())
+        await asyncio.gather(varianti_rent.run())
 
         loop = asyncio.get_running_loop()
 
