@@ -102,7 +102,7 @@ class VariantiParser(BaseParser):
 
                         if len(varianti_res["result"]["list"]) < self.items_per_page:
                             logger.info(
-                                f"No more flats found for {self.original_city_code} on page {page}")
+                                f"No more flats found for {internal_district_name} on page {page}")
                             break
 
                 except (aiohttp.ClientError, asyncio.TimeoutError) as e:
@@ -151,7 +151,7 @@ class VariantiParser(BaseParser):
         except Exception as e:
             logger.error(e)
             return
-        print("Subscribers: ", subscribers)
+
         for subscriber in subscribers:
             try:
                 if existing_flat is None:
