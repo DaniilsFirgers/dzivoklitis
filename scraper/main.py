@@ -11,6 +11,7 @@ from scraper.parsers.ss import SludinajumuServissParser
 from scraper.utils.meta import SingletonMeta
 from scraper.utils.logger import logger
 from scraper.parsers.city_24 import City24Parser
+from scraper.parsers.varianti import VariantiParser
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from scraper.utils.telegram import TelegramBot
 from scraper.parsers.pp import PardosanasPortalsParser
@@ -71,8 +72,14 @@ class FlatsParser(metaclass=SingletonMeta):
         pp_sell = PardosanasPortalsParser(
             self.telegram_bot, self.config.parsers.pp, DealType.SELL)
 
+        varianti_sell = VariantiParser(
+            self.telegram_bot, self.config.parsers.varianti, DealType.SELL)
+
+        varianti_rent = VariantiParser(
+            self.telegram_bot, self.config.parsers.varianti, DealType.RENT)
+
         # NOTE: currently no need to run all parsers at once
-        # await asyncio.gather(pp_sell.run())
+        await asyncio.gather(city24_rent.run(), city24_sell.run())
 
         loop = asyncio.get_running_loop()
 
@@ -93,6 +100,12 @@ class FlatsParser(metaclass=SingletonMeta):
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
             pp_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=10, name="PP_Rent")
+
+        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+            varianti_sell.run(), loop), "cron", hour="9,12,15,18,21", minute=12, name="Varianti_Sell")
+
+        self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
+            varianti_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=14, name="Varianti_Rent")
 
         self.scheduler.start()
 
