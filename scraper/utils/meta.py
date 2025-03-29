@@ -99,3 +99,11 @@ def convert_dt_to_utc(dt_str: str) -> datetime:
     dt = datetime.fromisoformat(dt_str)
     dt_utc = dt.astimezone(timezone.utc)
     return dt_utc
+
+
+def convert_timestamp_to_utc(timestamp: int) -> datetime:
+    """Convert timestamp to UTC"""
+
+    if timestamp > 10**10:  # If timestamp is in milliseconds
+        timestamp /= 1000
+    return datetime.fromtimestamp(timestamp, tz=timezone.utc)
