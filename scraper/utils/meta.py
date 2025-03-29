@@ -87,8 +87,7 @@ def valid_date_published(date_published_str: str) -> bool:
     """Check if date published is after start of the day in EET"""
 
     now = datetime.now(ZoneInfo("Europe/Riga"))
-    #  TODO: revert bakc later, remoev -3
-    start_of_day = datetime(now.year, now.month, now.day-3,
+    start_of_day = datetime(now.year, now.month, now.day,
                             0, 0, 0, tzinfo=ZoneInfo("Europe/Riga"))
     date_published = datetime.fromisoformat(date_published_str)
 
