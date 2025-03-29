@@ -28,7 +28,7 @@ class PP_Flat(Flat):
 
     def create(self, unified_flat_series: Dict[str, str]):
         self.area = try_parse_float(
-            self._get_text_attribute(PP_FILTER_MAP["area"], 2))
+            self._get_text_attribute(PP_FILTER_MAP["area"]), 2)
         self.rooms = try_parse_int(
             self._get_text_attribute(PP_FILTER_MAP["rooms"]))
         self.price, self.price_per_m2 = self._get_prices(self.full_price_type)
