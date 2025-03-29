@@ -21,9 +21,7 @@ class City24Parser(BaseParser):
         self.original_city_code = config.city_code
         self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
-        self.preferred_deal_type = config.deal_type
         self.user_agent = UserAgent()
-        # if there are less than 50, then there is no need to go to the next page
         self.items_per_page = 50
         self.semaphore = asyncio.Semaphore(8)
 
@@ -94,6 +92,7 @@ class City24Parser(BaseParser):
                            flat_data, self.city_name)
         try:
             flat.create(self.flat_series)
+            flat.validate()
         except Exception as e:
             logger.error(f"Error creating flat: {e}")
             return
