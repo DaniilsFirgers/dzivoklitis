@@ -18,7 +18,7 @@ class Varianti_Flat(Flat):
     def create(self, internal_series: Dict[str, str]):
         self.price_per_m2 = self.get_object_num("price_per_m")
         self.area = round(self.get_object_num("area"), 1)
-        self.price = int(self.get_object_num("price"))
+        self.price = self.get_object_num("price")
         self.rooms = self.get_object_num("rooms_count")
         self.street = self.get_street_name()
         self.floor = self.get_object_num("floor")
