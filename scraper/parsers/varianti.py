@@ -29,7 +29,7 @@ class VariantiParser(BaseParser):
     async def scrape(self) -> None:
         """Scrape flats from varianti.lv asynchronously"""
         connector = aiohttp.TCPConnector(
-            limit_per_host=2, keepalive_timeout=30)
+            limit_per_host=1, keepalive_timeout=30)
         async with aiohttp.ClientSession(connector=connector) as session:
             tasks = [asyncio.ensure_future(self.scrape_district(session, platform_district_name, internal_district_name))
                      for platform_district_name, internal_district_name in self.districts.items()]
