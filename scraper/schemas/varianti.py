@@ -15,6 +15,7 @@ class Object(TypedDict, total=False):
     rooms_count: int
     flat_building_type: int
     date_create: int
+    date_update: int
 
 
 class Address(TypedDict):

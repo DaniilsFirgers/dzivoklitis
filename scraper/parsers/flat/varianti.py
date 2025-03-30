@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Dict
 
 from scraper.parsers.base import UNKNOWN
@@ -26,8 +27,16 @@ class Varianti_Flat(Flat):
         self.series = self.get_series_type(internal_series)
         self.id = self.create_id()
         self.add_coordinates(self.get_coordinates())
-        self.created_at = convert_timestamp_to_utc(
-            self.flat["object"]["date_create"])
+        self.created_at = self.get_created_at()
+
+    def get_created_at(self) -> datetime:
+        date_create = self.flat["object"]["date_create"]
+        date_update = self.flat["object"]["date_update"]
+        if date_update is None:
+            return convert_timestamp_to_utc(date_create)
+        if date_update > date_create:
+            return convert_timestamp_to_utc(date_update)
+        return convert_timestamp_to_utc(date_create)
 
     def get_object_num(self, key: str) -> int | float:
         object = self.flat["object"]
