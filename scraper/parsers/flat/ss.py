@@ -19,8 +19,7 @@ class SS_Flat(Flat):
     def create(self, unified_flat_series: Dict[str, str]):
         if len(self.raw_info) != 7:
             raise ValueError("Incorrect number of elements in raw_info")
-        self.price = try_parse_int(
-            re.sub(r"[^\d.]", "", self.raw_info[6]))
+        self.price = self.get_price()
         self.price_per_m2 = try_parse_float(
             re.sub(r"[^\d.]", "", self.raw_info[5]))
         self.rooms = self.get_rooms()
@@ -30,6 +29,11 @@ class SS_Flat(Flat):
         self.series = unified_flat_series[self.raw_info[4]]
         self.id = self.create_id()
         self.created_at = datetime.now().astimezone(ZoneInfo("UTC"))
+
+    def get_price(self) -> int:
+        if self.deal_type == DealType.RENT.value:
+            return try_parse_int(re.sub(r"[^\d]", "", self.raw_info[6]))
+        return try_parse_int(re.sub(r"[^\d.]", "", self.raw_info[6]))
 
     def get_rooms(self) -> int:
         rooms = try_parse_int(self.raw_info[1])
