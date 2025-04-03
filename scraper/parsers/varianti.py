@@ -23,7 +23,7 @@ class VariantiParser(BaseParser):
         self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
         self.user_agent = UserAgent()
-        self.items_per_page = 100
+        self.items_per_page = 200
         self.semaphore = asyncio.Semaphore(4)
 
     async def scrape(self) -> None:
