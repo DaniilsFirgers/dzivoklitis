@@ -22,13 +22,13 @@ class City24Parser(BaseParser):
         self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
         self.user_agent = UserAgent()
-        self.items_per_page = 50
-        self.semaphore = asyncio.Semaphore(8)
+        self.items_per_page = 25
+        self.semaphore = asyncio.Semaphore(5)
 
     async def scrape(self) -> None:
         """Scrape flats from City24.lv asynchronously"""
         connector = aiohttp.TCPConnector(
-            limit_per_host=5, keepalive_timeout=30)
+            limit_per_host=2, keepalive_timeout=30)
         async with aiohttp.ClientSession(connector=connector) as session:
             await self.scrape_city(session)
 

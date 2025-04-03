@@ -1,4 +1,5 @@
 
+import asyncio
 from typing import List
 import aiohttp
 from fake_useragent import UserAgent
@@ -23,11 +24,12 @@ class PardosanasPortalsParser(BaseParser):
         self.user_agent = UserAgent()
         # if there are less than 20, then no need to go to the next page
         self.items_per_page = 20
+        self.semaphore = asyncio.Semaphore(5)
 
     async def scrape(self) -> None:
         """Scrape flats from pp.lv asynchronously."""
         connector = aiohttp.TCPConnector(
-            limit_per_host=5, keepalive_timeout=10)
+            limit_per_host=2, keepalive_timeout=10)
         async with aiohttp.ClientSession(connector=connector) as session:
             await self.scrape_city(session)
 

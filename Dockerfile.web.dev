@@ -1,0 +1,13 @@
+FROM node:21-alpine AS development
+
+WORKDIR /web-app
+
+COPY web-app/package.json web-app/package-lock.json ./
+
+RUN npm install
+
+COPY web-app/ /web-app/
+
+EXPOSE 81
+
+CMD ["npm", "run", "dev"]

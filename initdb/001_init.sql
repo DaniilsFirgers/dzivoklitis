@@ -65,14 +65,31 @@ CREATE TABLE IF NOT EXISTS filters (
     FOREIGN KEY (tg_user_id) REFERENCES users(tg_user_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS price_trends (
+    id SERIAL PRIMARY KEY,
+    flat_id VARCHAR(255) NOT NULL,
+    current_price INT NOT NULL,
+    initial_price INT NOT NULL,
+    price_diff INT NOT NULL,
+    pct_change NUMERIC(5, 2) NOT NULL,
+    type VARCHAR(20) NOT NULL, -- 'weekly', 'monthly', or 'quarterly'
+    start_time TIMESTAMPTZ NOT NULL,  -- Start of the period
+    end_time TIMESTAMPTZ NOT NULL,    -- End of the period
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    FOREIGN KEY (flat_id) REFERENCES flats(flat_id) ON DELETE CASCADE
+);
+
+
 -- create indexes
 CREATE INDEX idx_price_flat_id ON prices(flat_id);
 CREATE INDEX idx_price_flat_id_price ON prices(flat_id, price);
+CREATE INDEX idx_prices_flat_id_updated_at ON prices(flat_id, updated_at);
 CREATE INDEX idx_fav_flat_id ON favourites(flat_id);
 CREATE INDEX idx_fav_tg_user_id ON favourites(tg_user_id);
 CREATE INDEX idx_user_tg_user_id ON users(tg_user_id);
 create INDEX idx_flat_location ON flats USING GIST (location);
 CREATE INDEX idx_city_district ON filters (city, deal_type, district);
+CREATE INDEX idx_trends_type_end_time_start_time ON price_trends(type, start_time, end_time);
 
 -- create constraints
 ALTER TABLE prices ADD CONSTRAINT price_check CHECK (price > 0);
