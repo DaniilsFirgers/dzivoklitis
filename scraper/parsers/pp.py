@@ -29,7 +29,7 @@ class PardosanasPortalsParser(BaseParser):
     async def scrape(self) -> None:
         """Scrape flats from pp.lv asynchronously."""
         connector = aiohttp.TCPConnector(
-            limit_per_host=3, keepalive_timeout=10)
+            limit_per_host=2, keepalive_timeout=10)
         async with aiohttp.ClientSession(connector=connector) as session:
             await self.scrape_city(session)
 

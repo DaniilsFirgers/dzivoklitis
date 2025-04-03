@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup, ResultSet, Tag
 
 from scraper.schemas.shared import DealType
 from scraper.utils.config import Source, SsParserConfig
-from scraper.database.crud import get_matching_filters_tg_user_ids, get_users, upsert_flat, get_flat
+from scraper.database.crud import get_matching_filters_tg_user_ids, upsert_flat, get_flat
 from scraper.utils.telegram import MessageType, TelegramBot
 from scraper.parsers.flat.ss import SS_Flat
 from scraper.parsers.base import BaseParser
