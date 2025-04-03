@@ -88,9 +88,9 @@ services:
       - dzivoklitis
 
 
-  ngrok:
-    image: ngrok/ngrok:latest
-    container_name: ngrok
+  dzivoklitis-ngrok-proxy:
+    image: wernight/ngrok
+    container_name: dzivoklitis-ngrok-proxy
     environment:
       NGROK_PROTOCOL: http
       NGROK_REGION: eu
