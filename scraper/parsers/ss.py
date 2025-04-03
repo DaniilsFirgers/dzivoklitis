@@ -19,7 +19,7 @@ class SludinajumuServissParser(BaseParser):
         self.city_name = self.cities[self.original_city_name]
         self.look_back_arg = config.timeframe
         self.telegram_bot = telegram_bot
-        self.semaphore = asyncio.Semaphore(6)
+        self.semaphore = asyncio.Semaphore(5)
 
     async def fetch_page(self, session: aiohttp.ClientSession, url: str, retries: int = 3, delay: int = 1) -> str:
         for attempt in range(retries):
@@ -138,7 +138,7 @@ class SludinajumuServissParser(BaseParser):
 
     async def scrape(self) -> None:
         connector = aiohttp.TCPConnector(
-            limit_per_host=3, keepalive_timeout=40)
+            limit_per_host=2, keepalive_timeout=40)
         async with aiohttp.ClientSession(connector=connector) as session:
             tasks = [asyncio.ensure_future(self.scrape_district(session, platform_district_name, internal_district_name))
                      for platform_district_name, internal_district_name in self.districts.items()]

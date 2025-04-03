@@ -23,7 +23,7 @@ class VariantiParser(BaseParser):
         self.city_name = self.cities[self.original_city_code]
         self.telegram_bot = telegram_bot
         self.user_agent = UserAgent()
-        self.items_per_page = 200
+        self.items_per_page = 100
         self.semaphore = asyncio.Semaphore(4)
 
     async def scrape(self) -> None:
@@ -39,7 +39,6 @@ class VariantiParser(BaseParser):
         """Scrape the entire city asynchronously, handling pagination."""
         async with self.semaphore:
             url = "https://api.varianti.lv/rest/list/ad"
-            page = 0
 
             params = {
                 "filters": {
@@ -49,7 +48,7 @@ class VariantiParser(BaseParser):
                     "is_promoted": False,
                     "features": []
                 },
-                "page": page,
+                "page": 0,
                 "size": self.items_per_page,
                 "order":    {
                     "asc": "false",
@@ -74,24 +73,24 @@ class VariantiParser(BaseParser):
 
                     if not varianti_res:
                         logger.error(
-                            f"No data found for {self.original_city_code} on page {page}")
+                            f"No data found for {self.original_city_code}")
                         return
 
                     if varianti_res["result"]["list"] is None:
                         logger.info(
-                            f"No flats found for {self.original_city_code} on page {page}")
+                            f"No flats found for {self.original_city_code}")
                         return
 
                     if len(varianti_res["errorDescriptions"]):
                         logger.error(
-                            f"Error fetching data for {self.original_city_code} on page {page}: {varianti_res['errorDescriptions']}")
+                            f"Error fetching data for {self.original_city_code} - S {varianti_res['errorDescriptions']}")
                         return
 
                     await self.process_flats(varianti_res["result"]["list"], session, internal_district_name)
 
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
                 logger.error(
-                    f"Error fetching data for {self.original_city_code} on page {page}: {e}")
+                    f"Error fetching data for {self.original_city_code}: {e}")
                 return
 
     async def process_flats(self, flats: List[Flat], session: aiohttp.ClientSession, district_name: str):
