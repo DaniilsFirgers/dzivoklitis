@@ -1,16 +1,16 @@
 FROM python:3.10
 
-WORKDIR /backend
+WORKDIR /app
 
 COPY requirements.backend.txt /app/requirements.txt
 
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY backend /backend/dzivoklitis
+COPY backend /app/backend
 
 EXPOSE 8000
 
-ENV PYTHONPATH=/backend
+ENV PYTHONPATH=/app
 
 # Start FastAPI with hot reload enabled
-CMD ["uvicorn", "dzivoklitis.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
