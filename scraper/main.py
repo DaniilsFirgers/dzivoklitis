@@ -79,7 +79,7 @@ class FlatsParser(metaclass=SingletonMeta):
             self.telegram_bot, self.config.parsers.varianti, DealType.RENT)
 
         # NOTE: currently no need to run all parsers at once
-        await asyncio.gather(varianti_sell.scrape(), varianti_rent.scrape())
+        # await asyncio.gather(ss_sell.run())
 
         loop = asyncio.get_running_loop()
 
@@ -87,25 +87,25 @@ class FlatsParser(metaclass=SingletonMeta):
             ss_sell.run(), loop), "cron", hour="9,12,15,18,21", minute=0, name="SS_Sell")
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            ss_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=2, name="SS_Rent")
+            ss_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=3, name="SS_Rent")
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            city24_sell.run(), loop), "cron", hour="9,12,15,18,21", minute=4, name="City24_Sell")
+            city24_sell.run(), loop), "cron", hour="9,12,15,18,21", minute=6, name="City24_Sell")
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            city24_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=6, name="City24_Rent")
+            city24_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=9, name="City24_Rent")
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            pp_sell.run(), loop), "cron", hour="9,12,15,18,21", minute=8, name="PP_Sell")
+            pp_sell.run(), loop), "cron", hour="9,12,15,18,21", minute=12, name="PP_Sell")
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            pp_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=10, name="PP_Rent")
+            pp_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=15, name="PP_Rent")
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            varianti_sell.run(), loop), "cron", hour="9,12,15,18,21", minute=12, name="Varianti_Sell")
+            varianti_sell.run(), loop), "cron", hour="9,12,15,18,21", minute=18, name="Varianti_Sell")
 
         self.scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(
-            varianti_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=14, name="Varianti_Rent")
+            varianti_rent.run(), loop), "cron", hour="9,12,15,18,21", minute=21, name="Varianti_Rent")
 
         self.scheduler.start()
 
