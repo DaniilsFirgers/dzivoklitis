@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+@theme {
+  --color-midnight-indigo: #293556;
+  --color-midnight-azure: #2e4583;
+  --color-indigo-breeze: #3e60c1;
+  --color-indigo-bright: #5983fc;
+}
