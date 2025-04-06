@@ -2,8 +2,12 @@
 import React from "react";
 import Favourite from "../features/favourite/Favourite";
 import { type Favourite as FavoriteType } from "../features/favourite/types";
+import { useTelegramUser } from "../context/UserContext";
 
 const FavouritesPage: React.FC = () => {
+  const user = useTelegramUser();
+  console.log("User data:", user);
+  // Simulated data for favourites
   const favourites: FavoriteType[] = [
     {
       flat_id: "1",
@@ -40,6 +44,7 @@ const FavouritesPage: React.FC = () => {
   ];
   return (
     <div>
+      <div>{user?.id}</div>
       {favourites.map((favourite) => (
         <div key={favourite.flat_id} className="mb-4">
           <Favourite favourite={favourite} />
