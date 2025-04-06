@@ -2,6 +2,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/HomePage";
+import Favourites from "./pages/FavouritesPage";
 import Layout from "./components/Layout";
 
 const App: React.FC = () => {
@@ -11,6 +12,7 @@ const App: React.FC = () => {
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/favourites" element={<Favourites />} />
           </Routes>
         </Layout>
       </div>
