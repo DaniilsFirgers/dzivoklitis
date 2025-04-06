@@ -73,7 +73,7 @@ const Favourite: React.FC<Props> = ({ favourite }) => {
             rel="noopener noreferrer"
             className="no-underline text-gray-400"
           >
-            ❌ Dzēst
+            🗑️ Dzēst
           </a>
         </button>
       </div>
