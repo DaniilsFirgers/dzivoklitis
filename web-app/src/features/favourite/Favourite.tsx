@@ -9,45 +9,52 @@ type Props = {
 
 const Favourite: React.FC<Props> = ({ favourite }) => {
   return (
-    <div className="border w-fit p-3 rounded-md shadow-md bg-white">
-      <h2 className="text-lg">
-        <b>Avots </b>
-        {favourite.source}
+    <div className="w-fit p-3 rounded-md shadow-md bg-midnight-storm shadow text-md">
+      <h2 className="flex">
+        <b className="mr-1.5 text-midnight-moody">Avots:</b>
+        <h1 className="text-steel-bluee">{favourite.source}</h1>
       </h2>
-      <h2 className="text-lg">
-        <b>Pilsēta </b>
-        {favourite.city}
+      <h2 className="flex">
+        <b className="mr-1.5 text-midnight-moody">Pilsēta:</b>
+        <h1 className="text-steel-bluee">{favourite.city}</h1>
       </h2>
-      <h2 className="text-lg">
-        <b>Darījums </b>
-        {favourite.deal_type}
+      <h2 className="flex">
+        <b className="mr-1.5 text-midnight-moody">Darījums:</b>
+        <h1 className="text-steel-bluee">{favourite.deal_type}</h1>
       </h2>
-      <h2 className="">
-        <b>Apkaime </b>
-        {favourite.district}
+      <h2 className="flex">
+        <b className="mr-1.5 text-midnight-moody">Apkaime:</b>
+        <h1 className="text-steel-bluee">{favourite.district}</h1>
       </h2>
-      <h2 className="">
-        <b>Iela </b>
-        {favourite.street}
+      <h2 className="flex">
+        <b className="mr-1.5 text-midnight-moody">Iela:</b>
+        <h1 className="text-steel-bluee">{favourite.street}</h1>
       </h2>
-      <h2 className="">
-        <b>Sērija</b>: {favourite.series}
+      <h2 className="flex">
+        <b className="mr-1.5 text-midnight-moody">Sērija:</b>
+        <h1 className="text-steel-bluee">{favourite.series}</h1>
       </h2>
-      <h2 className="">
-        <b>Cena €</b>
-        {favourite.price} EUR
+      <h2 className="flex ">
+        <b className="mr-1.5 text-midnight-moody">Cena €:</b>
+        <h1 className="text-steel-bluee">{favourite.price}</h1>
       </h2>
-      <h2 className="">
-        <b>Cena €/m²</b>: {favourite.price_per_m2}
+      <h2 className="flex">
+        <b className="mr-1.5 text-midnight-moody">Cena €/m²:</b>
+        <h1 className="text-steel-bluee"> {favourite.price_per_m2}</h1>
       </h2>
-      <h2 className="">
-        <b>Istabas</b>: {favourite.rooms} rooms
+      <h2 className="flex">
+        <b className="mr-1.5 text-midnight-moody">Istabas:</b>
+        <h1 className="text-steel-bluee">{favourite.rooms}</h1>
       </h2>
-      <h2 className="">
-        <b>Stāvs</b>: {favourite.floor}/{favourite.floors_total}
+      <h2 className="flex">
+        <b className="mr-1.5 text-midnight-moody">Stāvs:</b>
+        <h1 className="text-steel-bluee">
+          {favourite.floor}/{favourite.floors_total}
+        </h1>
       </h2>
-      <h2 className="">
-        <b>Platība</b>: {favourite.area} m²
+      <h2 className="flex">
+        <b className="mr-1.5 text-midnight-moody">Platība m²:</b>
+        <h1 className="text-steel-bluee">{favourite.area}</h1>
       </h2>
       <div>
         <Button variant="contained" color="primary">
