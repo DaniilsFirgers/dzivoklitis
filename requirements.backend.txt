@@ -5,3 +5,7 @@ SQLAlchemy==2.0.38
 psycopg2-binary==2.9.10
 pydantic==2.10.6
 asyncpg==0.30.0
+GeoAlchemy2==0.17.1
+
+# For local development
+-e ./packages/shared_models
