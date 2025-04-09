@@ -1,0 +1,11 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61"]
+
+[project]
+dependencies = []
+name = "shared-models"
+version = "0.1.0"
+
+[tool.setuptools.packages.find]
+where = ["."]
