@@ -56,7 +56,7 @@ const Favourite: React.FC<Props> = ({ favourite }) => {
         <h1 className="text-steel-blue">{favourite.area}</h1>
       </h2>
       <div className="pt-2 flex gap-2">
-        <button className="bg-indigo-breeze hover:bg-indigo-breeze/60 px-1.5 py-1 rounded w-[100px]">
+        <button className="bg-indigo-breeze hover:bg-indigo-breeze/80 px-1.5 py-1 rounded w-[100px]">
           <a
             href={favourite.url}
             target="_blank"
@@ -66,7 +66,7 @@ const Favourite: React.FC<Props> = ({ favourite }) => {
             🔍 Aplūkot
           </a>
         </button>
-        <button className="bg-red-500/50 hover:bg-red-600/60 px-1.5 py-1 rounded w-[100px]">
+        <button className="bg-red-500/60 hover:bg-red-600/80 px-1.5 py-1 rounded w-[100px]">
           <a
             href={favourite.url}
             target="_blank"

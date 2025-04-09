@@ -44,12 +44,17 @@ const FavouritesPage: React.FC = () => {
   ];
   return (
     <div>
-      <div>{user?.id}</div>
-      {favourites.map((favourite) => (
-        <div key={favourite.flat_id} className="mb-4">
-          <Favourite favourite={favourite} />
-        </div>
-      ))}
+      <h1 className="text-indigo-breeze/80 pb-3 w-full text-center text-md font-medium">
+        <span className="opacity-70">⭐</span> Jūsu iecienītākie dzīvokļu
+        sludinājumi <span className="opacity-80">⭐</span>
+      </h1>
+      <div className="flex flex-wrap gap-3">
+        {favourites.map((favourite) => (
+          <div key={favourite.flat_id} className="mb-4 md:mx-0 mx-auto">
+            <Favourite favourite={favourite} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
