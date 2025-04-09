@@ -87,20 +87,21 @@ services:
     networks:
       - dzivoklitis
 
-
   dzivoklitis-ngrok-proxy:
-    image: wernight/ngrok
+    image: ngrok/ngrok:latest
     container_name: dzivoklitis-ngrok-proxy
     environment:
-      NGROK_PROTOCOL: http
-      NGROK_REGION: eu
-      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
-    command: ngrok http --domain=${NGROK_DOMAIN} dzivoklitis-nginx:80
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}  # Make sure to replace this with your ngrok auth token
+    command:
+      - "http"
+      - "http://dzivoklitis-nginx:80"  # Forward traffic to your dzivoklitis-nginx service on port 80
+      - "--domain=${NGROK_DOMAIN}"  # This specifies your custom ngrok domain
+    ports:
+      - "4040:4040"  # Exposes ngrok's web dashboard on port 4040 (for monitoring)
     depends_on:
       - dzivoklitis-nginx
     networks:
       - dzivoklitis
-  
     
 networks:
   dzivoklitis:
