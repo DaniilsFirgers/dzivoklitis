@@ -8,7 +8,6 @@ from scraper.parsers.flat.varianti import Varianti_Flat
 from scraper.schemas.shared import DealType
 from scraper.utils.config import VariantiParserConfig, Source
 from scraper.database.crud import get_flat, get_matching_filters_tg_user_ids, upsert_flat
-from scraper.parsers.flat.city_24 import City24_Flat
 from scraper.parsers.base import UNKNOWN, BaseParser
 from scraper.utils.telegram import MessageType, TelegramBot
 from scraper.schemas.varianti import Flat, VariantiRes
