@@ -1,6 +1,9 @@
-FROM python:3.10
+FROM python:alpine
 
 WORKDIR /app
+
+# Copy the packages directory first
+COPY packages ./packages
 
 COPY requirements.backend.txt /app/requirements.txt
 
@@ -10,7 +13,7 @@ COPY backend /app/backend
 
 EXPOSE 8000
 
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app:/app/packages
 
 # Start FastAPI with hot reload enabled
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

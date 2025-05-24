@@ -11,3 +11,6 @@ logs/
 
 # ignore migrations
 migrations/
+
+# Ignore the .eggs-info generated during installation
+*.egg-info/

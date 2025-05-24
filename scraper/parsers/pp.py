@@ -5,7 +5,7 @@ import aiohttp
 from fake_useragent import UserAgent
 
 from scraper.utils.config import PpParserConfig, Source
-from scraper.database.crud import get_flat, get_matching_filters_tg_user_ids, get_users, upsert_flat
+from scraper.database.crud import get_flat, get_matching_filters_tg_user_ids, upsert_flat
 from scraper.parsers.flat.pp import PP_Flat
 from scraper.parsers.base import UNKNOWN, BaseParser
 from scraper.schemas.pp import City24ResFlatsDict,  Flat, PriceType

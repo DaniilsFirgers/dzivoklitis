@@ -1,7 +1,8 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from shared_models.base import Base
+from shared_models import User, Price, Favourite, Flat, Filter
 
 
 def _get_db_url():
@@ -18,7 +19,12 @@ engine = create_engine(_get_db_url(), pool_pre_ping=True, echo=False, pool_use_l
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+# Function to create all tables from Base's metadata
+
+
+def init_db():
+    """Creates all tables based on Base metadata (models)"""
+    Base.metadata.create_all(bind=engine)
 
 
 def get_db():
