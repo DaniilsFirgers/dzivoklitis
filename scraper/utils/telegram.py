@@ -181,10 +181,10 @@ class TelegramBot:
                 reply_markup=markup if markup else None
             )
 
-    def flat_update_to_msg(self, flat: Flat, historical_prices: List[Price]) -> str:
-        historical_prices = sorted(
-            historical_prices, key=lambda x: x.updated_at, reverse=True)
-        last_price = historical_prices[0].price if historical_prices else flat.price
+    def flat_update_to_msg(self, flat: Flat, prices_info: List[Price]) -> str:
+        prices_info = sorted(
+            prices_info, key=lambda x: x.updated_at, reverse=True)
+        last_price = prices_info[0].price if prices_info else flat.price
 
         msg_title = "🎉 Cenas kritums!" if last_price > flat.price else "😢 Cenas pieaugums!"
 
@@ -193,19 +193,17 @@ class TelegramBot:
         price_history_text += f"    <i>{curr_price_date}</i>: {flat.price}€\n"
 
         prev_price = flat.price
-        for i, historical_price in enumerate(historical_prices, start=1):
-            # calculate the % price change with the last_price
-            price_change = (
-                (historical_price.price - prev_price) / prev_price) * 100
-            date = datetime.strftime(
-                historical_price.updated_at, "%d.%m.%Y")
+        for price_info in prices_info:
+            price_change = ((price_info.price - prev_price) /
+                            prev_price) * 100 if prev_price else 0
+            date = datetime.strftime(price_info.updated_at, "%d.%m.%Y")
 
-            # createe a message text for % price change with emoji, one is green arrow and the other is red arrow
-            price_change_txt = "(🟢 {price_change:.2f}%)" if price_change < 0 else "(🔴 {price_change:.2f}%)"
+            # Use f-string to format price_change properly
+            price_change_txt = f"(🟢 {price_change:.2f}%)" if price_change < 0 else f"(🔴 {price_change:.2f}%)"
 
-            price_history_text += f"    <i>{date}</i>: {historical_price.price}€ {price_change_txt}\n"
+            price_history_text += f"    <i>{date}</i>: {price_info.price}€ {price_change_txt}\n"
 
-            prev_price = historical_price.price
+            prev_price = price_info.price
 
         text = (
             f"<b>{msg_title}</b>\n"
