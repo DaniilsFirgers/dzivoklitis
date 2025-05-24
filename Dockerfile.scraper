@@ -1,8 +1,6 @@
 FROM python:alpine 
 
-RUN apt-get update && apt-get install -y \
-    libvips-dev \
-    && rm -rf /var/lib/apt/lists/*  # Clean up to reduce image size
+RUN apk update && apk add --no-cache vips-dev
 
 WORKDIR /app
 
