@@ -181,19 +181,34 @@ class TelegramBot:
                 reply_markup=markup if markup else None
             )
 
-    def flat_update_to_msg(self, flat: Flat, prev_prices: List[Price]) -> str:
-        # sort prices by updated_at in descending order
-        prev_prices = sorted(
-            prev_prices, key=lambda x: x.updated_at, reverse=True)
+    def flat_update_to_msg(self, flat: Flat, historical_prices: List[Price]) -> str:
+        historical_prices = sorted(
+            historical_prices, key=lambda x: x.updated_at, reverse=True)
+        last_price = historical_prices[0].price if historical_prices else flat.price
+
+        msg_title = "🎉 Cenas kritums!" if last_price > flat.price else "😢 Cenas pieaugums!"
 
         price_history_text = ("<b>Cenu vēsture: </b>\n")
-        for i, prev_price in enumerate(prev_prices, start=1):
-            formatted_date = datetime.strftime(
-                prev_price.updated_at, "%d.%m.%Y")
-            price_history_text += f"    <i>{formatted_date}</i>: {prev_price.price}€\n"
+        curr_price_date = date = datetime.strftime(flat.created_at, "%d.%m.%Y")
+        price_history_text += f"    <i>{curr_price_date}</i>: {flat.price}€\n"
+
+        prev_price = flat.price
+        for i, historical_price in enumerate(historical_prices, start=1):
+            # calculate the % price change with the last_price
+            price_change = (
+                (historical_price.price - prev_price) / prev_price) * 100
+            date = datetime.strftime(
+                historical_price.updated_at, "%d.%m.%Y")
+
+            # createe a message text for % price change with emoji, one is green arrow and the other is red arrow
+            price_change_txt = "(🟢 {price_change:.2f}%)" if price_change < 0 else "(🔴 {price_change:.2f}%)"
+
+            price_history_text += f"    <i>{date}</i>: {historical_price.price}€ {price_change_txt}\n"
+
+            prev_price = historical_price.price
 
         text = (
-            f"<b>🔥 Cenu izmaiņa! 🔥</b>\n"
+            f"<b>{msg_title}</b>\n"
             f"<b>Avots</b>: {flat.source.value}\n"
             f"<b>Darījums</b>: {flat.deal_type}\n"
             f"<b>Pilsēta</b>: {flat.city}\n"
