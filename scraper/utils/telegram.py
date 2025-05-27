@@ -183,27 +183,40 @@ class TelegramBot:
 
     def flat_update_to_msg(self, flat: Flat, prices_info: List[Price]) -> str:
         prices_info = sorted(
-            prices_info, key=lambda x: x.updated_at, reverse=True)
-        last_price = prices_info[0].price if prices_info else flat.price
+            prices_info, key=lambda x: x.updated_at, reverse=False)
+        last_price = prices_info[len(
+            prices_info) - 1].price if prices_info else flat.price
 
         msg_title = "🎉 Cenas kritums!" if last_price > flat.price else "😢 Cenas pieaugums!"
 
-        price_history_text = ("<b>Cenu vēsture: </b>\n")
-        curr_price_date = date = datetime.strftime(flat.created_at, "%d.%m.%Y")
-        price_history_text += f"    <i>{curr_price_date}</i>: {flat.price}€\n"
+        price_history_text = "<b>Cenu vēsture: </b>\n"
 
-        prev_price = flat.price
+        prev_price = None
         for price_info in prices_info:
-            price_change = ((price_info.price - prev_price) /
-                            prev_price) * 100 if prev_price else 0
-            date = datetime.strftime(price_info.updated_at, "%d.%m.%Y")
+            date = price_info.updated_at.strftime("%d.%m.%Y")
 
-            # Use f-string to format price_change properly
-            price_change_txt = f"(🟢 {price_change:.2f}%)" if price_change < 0 else f"(🔴 {price_change:.2f}%)"
+            if prev_price is None:
+                line = f"    <i>{date}</i>: {price_info.price}€\n"
+            else:
+                price_change = (
+                    (price_info.price - prev_price) / prev_price) * 100
+                arrow = "🔽" if price_change < 0 else "🔼"
+                line = f"    <i>{date}</i>: {price_info.price}€ ({arrow} {abs(price_change):.2f}%)\n"
 
-            price_history_text += f"    <i>{date}</i>: {price_info.price}€ {price_change_txt}\n"
-
+            price_history_text = line + price_history_text
             prev_price = price_info.price
+
+        if prev_price:
+            date = flat.created_at.strftime("%d.%m.%Y")
+            price_change = ((flat.price - prev_price) / prev_price) * 100
+            arrow = "🔽" if price_change < 0 else "🔼"
+            current_price_line = f"    <i>{date}</i>: {flat.price}€ ({arrow} {abs(price_change):.2f}%)\n"
+            price_history_text = current_price_line + price_history_text
+
+        else:
+            date = flat.created_at.strftime("%d.%m.%Y")
+            current_price_line = f"    <i>{date}</i>: {flat.price}€\n"
+            price_history_text = current_price_line + price_history_text
 
         text = (
             f"<b>{msg_title}</b>\n"
