@@ -19,7 +19,7 @@ class SludinajumuServissParser(BaseParser):
         self.city_name = self.cities[self.original_city_name]
         self.look_back_arg = config.timeframe
         self.telegram_bot = telegram_bot
-        self.semaphore = asyncio.Semaphore(5)
+        self.semaphore = asyncio.Semaphore(4)
 
     async def fetch_page(self, session: aiohttp.ClientSession, url: str, retries: int = 3, delay: int = 1) -> str:
         for attempt in range(retries):
