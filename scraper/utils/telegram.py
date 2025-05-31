@@ -189,7 +189,7 @@ class TelegramBot:
 
         msg_title = "🎉 Cenas kritums!" if last_price > flat.price else "😢 Cenas pieaugums!"
 
-        price_history_text = "<b>Cenu vēsture: </b>\n"
+        price_history_text = ""
 
         prev_price = None
         for price_info in prices_info:
@@ -217,6 +217,8 @@ class TelegramBot:
             date = flat.created_at.strftime("%d.%m.%Y")
             current_price_line = f"    <i>{date}</i>: {flat.price}€\n"
             price_history_text = current_price_line + price_history_text
+
+        price_history_text += "<b>Cenu vēsture: </b>\n"
 
         text = (
             f"<b>{msg_title}</b>\n"
