@@ -24,7 +24,7 @@ class PardosanasPortalsParser(BaseParser):
         self.user_agent = UserAgent()
         # if there are less than 20, then no need to go to the next page
         self.items_per_page = 20
-        self.semaphore = asyncio.Semaphore(5)
+        self.semaphore = asyncio.Semaphore(4)
 
     async def scrape(self) -> None:
         """Scrape flats from pp.lv asynchronously."""

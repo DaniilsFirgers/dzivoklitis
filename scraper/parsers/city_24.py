@@ -23,7 +23,7 @@ class City24Parser(BaseParser):
         self.telegram_bot = telegram_bot
         self.user_agent = UserAgent()
         self.items_per_page = 25
-        self.semaphore = asyncio.Semaphore(5)
+        self.semaphore = asyncio.Semaphore(4)
 
     async def scrape(self) -> None:
         """Scrape flats from City24.lv asynchronously"""
